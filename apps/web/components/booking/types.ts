@@ -1,4 +1,5 @@
 import type { RouterInputs, RouterOutputs } from "@calcom/trpc/react";
+import type { WorkingHours } from "@calcom/types/schedule";
 
 export type BookingListingStatus = NonNullable<
   RouterInputs["viewer"]["bookings"]["get"]["filters"]["statuses"]
@@ -14,6 +15,8 @@ export type BookingItemProps = BookingItem & {
     userTimeZone: string | undefined;
     userTimeFormat: number | null | undefined;
     userEmail: string | undefined;
+    workingHours?: WorkingHours[];
+    workingHoursTimeZone?: string;
   };
   isToday: boolean;
   onClick?: () => void;
