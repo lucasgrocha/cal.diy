@@ -1,6 +1,7 @@
 import { ColumnFilterType } from "@calcom/features/data-table";
 import { isSeparatorRow } from "@calcom/features/data-table/lib/separator";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
+import { trpc } from "@calcom/trpc/react";
 import type useMeQuery from "@calcom/trpc/react/hooks/useMeQuery";
 import BookingListItem from "@calcom/web/components/booking/BookingListItem";
 import { createColumnHelper } from "@tanstack/react-table";
@@ -22,6 +23,10 @@ export function useBookingListColumns({
   handleBookingClick: (bookingUid: string) => void;
 }) {
   const { t } = useLocale();
+  const { data: defaultSchedule } = trpc.viewer.availability.schedule.get.useQuery(
+    {},
+    { enabled: !!user }
+  );
 
   return useMemo(() => {
     const columnHelper = createColumnHelper<RowData>();
@@ -137,6 +142,8 @@ export function useBookingListColumns({
                 userTimeZone: user?.timeZone,
                 userTimeFormat: user?.timeFormat,
                 userEmail: user?.email,
+                workingHours: defaultSchedule?.workingHours,
+                workingHoursTimeZone: defaultSchedule?.timeZone,
               }}
               listingStatus={status}
               recurringInfo={recurringInfo}
@@ -147,5 +154,5 @@ export function useBookingListColumns({
         },
       }),
     ];
-  }, [user, status, t, bookingsV3Enabled, handleBookingClick]);
+  }, [user, status, t, bookingsV3Enabled, handleBookingClick, defaultSchedule]);
 }
