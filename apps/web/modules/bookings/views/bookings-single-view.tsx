@@ -68,6 +68,7 @@ import EventReservationSchema from "@calcom/web/components/schemas/EventReservat
 import { timeZone } from "@calcom/web/lib/clock";
 
 import { usePaymentStatus } from "../hooks/usePaymentStatus";
+import { buildBookingSummary } from "../lib/bookingSummary";
 import type { PageProps } from "./bookings-single-view.getServerSideProps";
 
 const stringToBoolean = z
@@ -106,7 +107,7 @@ const useBrandColors = ({
 };
 
 export default function Success(props: PageProps) {
-  const { t } = useLocale();
+  const { t, i18n } = useLocale();
   const router = useRouter();
   const routerQuery = useRouterQuery();
   const pathname = usePathname();
@@ -378,6 +379,25 @@ export default function Success(props: PageProps) {
   const isBookingInPast = new Date(bookingInfo.endTime) < new Date();
   const isReschedulable = !isCancelled;
 
+  const handleCopySummary = async () => {
+    const summary = buildBookingSummary({
+      title: eventName,
+      date,
+      durationInMinutes: calculatedDuration,
+      is24h,
+      locale: i18n.language,
+      timeZone: tz,
+      location: locationToDisplay,
+    });
+
+    try {
+      await navigator.clipboard.writeText(summary);
+      showToast(t("booking_summary_copied"), "success");
+    } catch (error) {
+      showToast(t("booking_summary_copy_failed"), "error");
+    }
+  };
+
   const bookingCancelledEventProps = {
     booking: bookingInfo,
     organizer: {
@@ -606,6 +626,22 @@ export default function Success(props: PageProps) {
                               : eventName
                             : eventName}
                         </div>
+                        {!isCancellationMode && (
+                          <>
+                            <div />
+                            <div className="col-span-2 mb-6 last:mb-0">
+                              <Button
+                                type="button"
+                                color="secondary"
+                                size="sm"
+                                data-testid="copy-summary"
+                                StartIcon="copy"
+                                onClick={handleCopySummary}>
+                                {t("copy_summary")}
+                              </Button>
+                            </div>
+                          </>
+                        )}
                         <div className="font-medium">{t("when")}</div>
                         <div className="col-span-2 mb-6 last:mb-0">
                           {reschedule && !!formerTime && (
