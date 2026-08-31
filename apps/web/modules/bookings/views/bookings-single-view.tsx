@@ -64,6 +64,7 @@ import {
 import { showToast } from "@calcom/ui/components/toast";
 import { useCalcomTheme } from "@calcom/ui/styles";
 import CancelBooking from "@calcom/web/components/booking/CancelBooking";
+import { CopyBookingSummaryButton } from "@calcom/web/components/booking/CopyBookingSummaryButton";
 import EventReservationSchema from "@calcom/web/components/schemas/EventReservationSchema";
 import { timeZone } from "@calcom/web/lib/clock";
 
@@ -106,7 +107,10 @@ const useBrandColors = ({
 };
 
 export default function Success(props: PageProps) {
-  const { t } = useLocale();
+  const {
+    t,
+    i18n: { language },
+  } = useLocale();
   const router = useRouter();
   const routerQuery = useRouterQuery();
   const pathname = usePathname();
@@ -841,6 +845,27 @@ export default function Success(props: PageProps) {
                         })}
                       </div>
                     </div>
+                    {!isCancelled && !!calculatedDuration && (
+                      <div className="mb-8 flex justify-center">
+                        <CopyBookingSummaryButton
+                          title={eventName}
+                          formattedDate={formatToLocalizedDate(date, language, "full", tz)}
+                          formattedTimeRange={`${formatToLocalizedTime({
+                            date,
+                            locale: language,
+                            hour12: !is24h,
+                            timeZone: tz,
+                          })} - ${formatToLocalizedTime({
+                            date: dayjs(date).add(calculatedDuration, "m"),
+                            locale: language,
+                            hour12: !is24h,
+                            timeZone: tz,
+                          })}`}
+                          formattedTimeZone={formatToLocalizedTimezone(date, language, tz) ?? tz}
+                          location={locationToDisplay}
+                        />
+                      </div>
+                    )}
                     {requiresLoginToUpdate && (
                       <>
                         <hr className="border-subtle mb-8" />
