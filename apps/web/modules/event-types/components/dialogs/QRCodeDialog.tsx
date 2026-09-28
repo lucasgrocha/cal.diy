@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
-import QRCode from "qrcode";
-
-import { Dialog } from "@calcom/features/components/controlled-dialog";
 import type { DialogProps as ControlledDialogProps } from "@calcom/features/components/controlled-dialog";
+import { Dialog } from "@calcom/features/components/controlled-dialog";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { Button } from "@calcom/ui/components/button";
-import { DialogContent, DialogFooter, DialogClose } from "@calcom/ui/components/dialog";
+import { DialogClose, DialogContent, DialogFooter } from "@calcom/ui/components/dialog";
+import QRCode from "qrcode";
+import { useEffect, useState } from "react";
 
 export function QRCodeDialog({
   permalink,
@@ -40,7 +39,7 @@ export function QRCodeDialog({
               <img src={dataUrl} alt={permalink} width={240} height={240} />
             )}
           </div>
-          <p className="text-subtle w-full truncate text-center text-sm">{permalink}</p>
+          <p className="w-full truncate text-center text-sm text-subtle">{permalink}</p>
         </div>
         <DialogFooter showDivider>
           <DialogClose />
