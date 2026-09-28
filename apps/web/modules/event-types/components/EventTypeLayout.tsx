@@ -30,6 +30,7 @@ import { Suspense, useMemo, useState } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { Shell as PlatformShell } from "../../../../../packages/platform/atoms/src/components/ui/shell";
 import { DeleteDialog } from "./dialogs/DeleteDialog";
+import { QRCodeDialog } from "./dialogs/QRCodeDialog";
 
 type Props = {
   children: React.ReactNode;
@@ -70,6 +71,7 @@ function EventTypeSingleLayout({
   const eventTypesLockedByOrg = eventType.team?.parent?.organizationSettings?.lockEventTypeCreationForUsers;
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [qrCodeDialogOpen, setQrCodeDialogOpen] = useState(false);
 
   const hasPermsToDelete =
     currentUserMembership?.role !== "MEMBER" ||
@@ -184,6 +186,17 @@ function EventTypeSingleLayout({
                   />
                 )}
                 {!isPlatform && (
+                  <Button
+                    color="secondary"
+                    variant="icon"
+                    StartIcon="qr-code"
+                    tooltip={t("qr_code")}
+                    tooltipSide="bottom"
+                    tooltipOffset={4}
+                    onClick={() => setQrCodeDialogOpen(true)}
+                  />
+                )}
+                {!isPlatform && (
                   <EventTypeEmbedButton
                     embedUrl={encodeURIComponent(embedLink)}
                     StartIcon="code"
@@ -238,6 +251,14 @@ function EventTypeSingleLayout({
                     showToast("Link copied!", "success");
                   }}>
                   {t("copy_link")}
+                </DropdownItem>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="focus:ring-muted">
+                <DropdownItem
+                  type="button"
+                  StartIcon="qr-code"
+                  onClick={() => setQrCodeDialogOpen(true)}>
+                  {t("qr_code")}
                 </DropdownItem>
               </DropdownMenuItem>
               {allowDelete && (
@@ -324,6 +345,14 @@ function EventTypeSingleLayout({
       />
 
       {!isPlatform && <EventTypeEmbedDialog />}
+      {!isPlatform && (
+        <QRCodeDialog
+          permalink={permalink}
+          eventTypeSlug={eventType.slug}
+          open={qrCodeDialogOpen}
+          onOpenChange={setQrCodeDialogOpen}
+        />
+      )}
     </Shell>
   );
 }

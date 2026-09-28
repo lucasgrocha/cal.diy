@@ -107,6 +107,7 @@ export const lucideIconList = new Set([
   "phone",
   "play",
   "plus",
+  "qr-code",
   "refresh-ccw",
   "refresh-cw",
   "repeat",
