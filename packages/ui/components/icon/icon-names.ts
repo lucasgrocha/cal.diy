@@ -115,6 +115,7 @@ export type IconName =
   | "phone"
   | "play"
   | "plus"
+  | "qr-code"
   | "refresh-ccw"
   | "refresh-cw"
   | "repeat"
