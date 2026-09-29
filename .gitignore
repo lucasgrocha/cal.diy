@@ -107,6 +107,7 @@ packages/**/.yarn/ci-cache/
 # AI - session/user specific files (keep CLAUDE.md and .cursor/skills tracked)
 .claude/plans/
 .claude/settings.local.json
+.claude/tickets/
 
 # Spec drafts (rough work, not ready for review)
 specs/**/_drafts/
