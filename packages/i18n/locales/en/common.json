@@ -3642,7 +3642,7 @@
   "leave_without_saving_description": "Are you sure you want to leave without saving changes to your routing form?",
   "something_unexpected_occurred": "Something unexpected occurred",
   "500_error_message": "It's not you, it's us.",
-  "dry_run_mode_active": "You are doing a test booking.",
+  "dry_run_mode_active": "You're doing a test booking.",
   "icon_showcase": "Icon showcase",
   "icons_showcase": "Icons showcase",
   "migrating_from_team": "Migrating from team",
