@@ -1,0 +1,12 @@
+{
+  "description": "PR auto-approve policy for the cal.diy repo. Enforced by .claude/scripts/check-pr-approve.sh via a PreToolUse hook, and runnable directly through the pr-auto-approve-check skill.",
+  "scope": "cal.diy repo only",
+  "rule": "Auto-approve a PR only when every changed file is non-code (docs, copy/content strings, config, etc.). If any changed file matches codeExtensions, the PR must be reviewed manually.",
+  "codeExtensions": [
+    ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs",
+    ".py", ".go", ".rb", ".java", ".kt", ".kts", ".rs",
+    ".c", ".h", ".cpp", ".cc", ".hpp", ".cs", ".swift",
+    ".php", ".sh", ".bash", ".zsh", ".sql", ".scala",
+    ".dart", ".lua", ".pl", ".ex", ".exs", ".clj", ".hs"
+  ]
+}
