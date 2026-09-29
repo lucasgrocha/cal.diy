@@ -17,6 +17,7 @@ import { BookerLayouts } from "@calcom/prisma/zod-utils";
 import classNames from "@calcom/ui/classNames";
 
 import { AvailableTimesHeader } from "@calcom/web/modules/bookings/components/AvailableTimesHeader";
+import { ChooseForMeSlot } from "@calcom/web/modules/bookings/components/ChooseForMeSlot";
 import type { useScheduleForEventReturnType } from "@calcom/web/modules/schedules/hooks/useEvent";
 import { getQueryParam } from "@calcom/features/bookings/Booker/utils/query-param";
 
@@ -82,6 +83,7 @@ export const AvailableTimeSlots = ({
   ...props
 }: AvailableTimeSlotsProps) => {
   const selectedDate = useBookerStoreContext((state) => state.selectedDate);
+  const setSelectedDate = useBookerStoreContext((state) => state.setSelectedDate);
 
   const setSeatedEventData = useBookerStoreContext((state) => state.setSeatedEventData);
   const date = selectedDate || dayjs().format("YYYY-MM-DD");
@@ -189,8 +191,26 @@ export const AvailableTimeSlots = ({
     [overlayCalendarToggled, onTimeSelect, seatsPerTimeSlot, skipConfirmStep, toggleConfirmButton]
   );
 
+  const onChooseForMeConfirm = useCallback(
+    (slot: Slot) => {
+      const slotDate = dayjs(slot.time).format("YYYY-MM-DD");
+      if (slotDate !== selectedDate) {
+        setSelectedDate({ date: slotDate });
+      }
+      onTimeSelect(slot.time, slot.attendees || 0, seatsPerTimeSlot, slot.bookingUid);
+    },
+    [onTimeSelect, seatsPerTimeSlot, selectedDate, setSelectedDate]
+  );
+
   return (
     <>
+      {!isLoading && (
+        <ChooseForMeSlot
+          slots={scheduleData?.slots}
+          unavailableTimeSlots={unavailableTimeSlots}
+          onConfirm={onChooseForMeConfirm}
+        />
+      )}
       <div
         className={classNames(
           `flex`,
