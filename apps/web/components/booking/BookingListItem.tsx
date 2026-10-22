@@ -8,6 +8,7 @@ import { getSuccessPageLocationMessage, guessEventLocationType } from "@calcom/a
 import dayjs from "@calcom/dayjs";
 // TODO: Use browser locale, implement Intl in Dayjs maybe?
 import "@calcom/dayjs/locales";
+import { isTimeOutsideWorkingHours } from "@calcom/lib/availability";
 import { formatTime } from "@calcom/lib/dayjs";
 import { useCopy } from "@calcom/lib/hooks/useCopy";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
@@ -131,7 +132,8 @@ function BookingListItem(booking: BookingItemProps) {
   const parsedBooking = buildParsedBooking(booking);
   const itemRef = useRef<HTMLDivElement>(null);
 
-  const { userTimeZone, userTimeFormat, userEmail } = booking.loggedInUser;
+  const { userTimeZone, userTimeFormat, userEmail, userId, workingHours, workingHoursTimeZone } =
+    booking.loggedInUser;
   const { onClick } = booking;
   const {
     t,
@@ -167,6 +169,16 @@ function BookingListItem(booking: BookingItemProps) {
   const isPending = booking.status === BookingStatus.PENDING;
   const isRescheduled = booking.fromReschedule !== null;
   const isRecurring = booking.recurringEventId !== null;
+
+  const isHost = !!userId && booking.user?.id === userId;
+  const isOutsideWorkingHours =
+    isHost &&
+    !isCancelled &&
+    !isRejected &&
+    !!workingHours?.length &&
+    !!workingHoursTimeZone &&
+    (isTimeOutsideWorkingHours(booking.startTime, workingHours, workingHoursTimeZone) ||
+      isTimeOutsideWorkingHours(booking.endTime, workingHours, workingHoursTimeZone));
 
   const isTabRecurring = booking.listingStatus === "recurring";
   const isTabUnconfirmed = booking.listingStatus === "unconfirmed";
@@ -367,6 +379,11 @@ function BookingListItem(booking: BookingItemProps) {
                   {t("unconfirmed")}
                 </Badge>
               )}
+              {isOutsideWorkingHours && (
+                <Badge className="ltr:mr-2 rtl:ml-2 sm:hidden" variant="orange" startIcon="triangle-alert">
+                  {t("outside_of_working_hours")}
+                </Badge>
+              )}
               {booking.eventType?.team && (
                 <Badge className="ltr:mr-2 rtl:ml-2 sm:hidden" variant="gray">
                   {booking.eventType.team.name}
@@ -537,6 +554,7 @@ function BookingListItem(booking: BookingItemProps) {
         userTimeFormat={userTimeFormat}
         userTimeZone={userTimeZone}
         isRescheduled={isRescheduled}
+        isOutsideWorkingHours={isOutsideWorkingHours}
         onAssignmentReasonClick={undefined}
       />
     </div>
@@ -551,6 +569,7 @@ const BookingItemBadges = ({
   userTimeFormat,
   userTimeZone,
   isRescheduled,
+  isOutsideWorkingHours,
   onAssignmentReasonClick,
 }: {
   booking: BookingItemProps;
@@ -560,6 +579,7 @@ const BookingItemBadges = ({
   userTimeFormat: number | null | undefined;
   userTimeZone: string | undefined;
   isRescheduled: boolean;
+  isOutsideWorkingHours: boolean;
   onAssignmentReasonClick?: () => void;
 }) => {
   const { t } = useLocale();
@@ -570,6 +590,13 @@ const BookingItemBadges = ({
         <Badge className="ltr:mr-2 rtl:ml-2" variant="orange">
           {t("unconfirmed")}
         </Badge>
+      )}
+      {isOutsideWorkingHours && (
+        <Tooltip content={t("outside_of_working_hours_tooltip")}>
+          <Badge className="ltr:mr-2 rtl:ml-2" variant="orange" startIcon="triangle-alert">
+            {t("outside_of_working_hours")}
+          </Badge>
+        </Tooltip>
       )}
       {isRescheduled && (
         <Tooltip content={`${t("rescheduled_by")} ${booking.rescheduler}`}>

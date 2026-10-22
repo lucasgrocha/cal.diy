@@ -324,6 +324,8 @@
   "optional": "Optional",
   "input_type": "Input type",
   "unconfirmed": "Unconfirmed",
+  "outside_of_working_hours": "Outside working hours",
+  "outside_of_working_hours_tooltip": "This booking falls outside of your working hours",
   "guests": "Guests",
   "guest": "Guest",
   "attendee": "Attendee",
