@@ -14,7 +14,8 @@ import { localStorage } from "@calcom/lib/webstorage";
 import classNames from "@calcom/ui/classNames";
 import { Button } from "@calcom/ui/components/button";
 import { SkeletonText } from "@calcom/ui/components/skeleton";
-import { CalendarX2Icon } from "@coss/ui/icons";
+import { Tooltip } from "@calcom/ui/components/tooltip";
+import { CalendarX2Icon, ClockIcon } from "@coss/ui/icons";
 import * as HoverCard from "@radix-ui/react-hover-card";
 import { AnimatePresence, m } from "framer-motion";
 import { useMemo } from "react";
@@ -41,6 +42,12 @@ type TOnTentativeTimeSelect = ({
   seatsPerTimeSlot?: number | null;
   bookingUid?: string;
 }) => void;
+
+// Typical business hours window used to warn bookers when a slot falls outside
+// of it in their own local timezone (organizers may configure availability
+// that spans early mornings, evenings, or overnight shifts).
+const BUSINESS_HOURS_START = 9;
+const BUSINESS_HOURS_END = 18;
 
 export type AvailableTimesProps = {
   slots: Slots[string];
@@ -114,6 +121,9 @@ const SlotItem = ({
   const layout = useBookerStoreContext((state) => state.layout);
   const hasTimeSlots = !!seatsPerTimeSlot;
   const computedDateWithUsersTimezone = dayjs.utc(slot.time).tz(timezone);
+  const isOutsideBusinessHours =
+    computedDateWithUsersTimezone.hour() < BUSINESS_HOURS_START ||
+    computedDateWithUsersTimezone.hour() >= BUSINESS_HOURS_END;
 
   const bookingFull = !!(hasTimeSlots && slot.attendees && slot.attendees >= seatsPerTimeSlot);
   const isHalfFull = slot.attendees && seatsPerTimeSlot && slot.attendees / seatsPerTimeSlot >= 0.5;
@@ -181,7 +191,17 @@ const SlotItem = ({
               />
             )}
             {computedDateWithUsersTimezone.format(timeFormat)}
+            {isOutsideBusinessHours && (
+              <Tooltip content={t("outside_business_hours_tooltip")}>
+                <span data-testid="outside-business-hours-indicator">
+                  <ClockIcon className="text-attention h-3.5 w-3.5" aria-hidden />
+                </span>
+              </Tooltip>
+            )}
           </div>
+          {isOutsideBusinessHours && !bookingFull && (
+            <p className="text-attention text-sm">{t("outside_business_hours_short")}</p>
+          )}
           {bookingFull && <p className="text-sm">{t("booking_full")}</p>}
           {hasTimeSlots && !bookingFull && (
             <p className="flex items-center text-sm">
