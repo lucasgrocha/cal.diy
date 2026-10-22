@@ -897,6 +897,8 @@
   "pending": "Pending",
   "open_options": "Open options",
   "copy_link": "Copy link to event",
+  "qr_code": "QR code",
+  "qr_code_dialog_description": "Scan or download this QR code to share the booking link.",
   "share": "Share",
   "share_event": "Would you mind booking my cal or send me your link?",
   "copy_link_team": "Copy link to team",
