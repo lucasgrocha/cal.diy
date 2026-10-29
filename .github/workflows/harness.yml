@@ -12,7 +12,7 @@
 #                 └─► awaiting-answers (plan didn't hold up)                             #
 #                                                                                        #
 # A failed stage adds `harness:blocked`; `/resume` repeats the current stage.            #
-# Only commenters with write access can move the state, and only their comments are      #
+# Only the repository owner can move the state, and only their comments are              #
 # given to Claude. Removing `prioritized` pauses the harness.                            #
 #                                                                                        #
 # Setup: create the `prioritized` label, run `/install-github-app` in Claude Code        #
@@ -41,11 +41,13 @@ defaults:
 
 jobs:
   deliver:
+    # Runs only for the repository owner, even on a public repo.
     if: >-
+      github.actor == github.repository_owner && (
       (github.event_name == 'issues' && github.event.label.name == 'prioritized') ||
       (github.event_name == 'issue_comment' && !github.event.issue.pull_request &&
        github.event.comment.user.type != 'Bot' &&
-       contains(join(github.event.issue.labels.*.name, ' '), 'harness:'))
+       contains(join(github.event.issue.labels.*.name, ' '), 'harness:')))
     runs-on: ubuntu-latest
     timeout-minutes: 120
     # One run per issue at a time, so the state read by the router is never stale.
