@@ -11,11 +11,9 @@ harness_fail() {
   exit 1
 }
 
-# Only people with write access may steer the harness or feed it context.
+# Only the repository owner may steer the harness or feed it context.
 harness_trusted() {
-  local permission
-  permission=$(gh api "repos/$REPO/collaborators/$1/permission" --jq .permission 2>/dev/null) || return 1
-  [[ $permission == admin || $permission == write ]]
+  [[ $1 == "${REPO%%/*}" ]]
 }
 
 harness_labels() {
@@ -70,14 +68,14 @@ harness_route() {
       awaiting-approval:/revise) next=plan ;;
     esac
   else
-    echo "::notice::@$ACTOR lacks write access; comment ignored."
+    echo "::notice::@$ACTOR is not the repository owner; comment ignored."
   fi
 
   if [[ -n $next ]]; then harness_set_stage "$next"; fi
   echo "stage=$next" >>"$GITHUB_OUTPUT"
 }
 
-# Writes the issue and its trusted discussion (write-access humans plus harness records) to
+# Writes the issue and its trusted discussion (the owner plus harness records) to
 # the file Claude reads, so comments from anyone else never reach the model.
 harness_context() {
   local tmp login trusted='[]'
