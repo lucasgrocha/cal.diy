@@ -1,5 +1,5 @@
 {
-  "status": "pm",
+  "status": "research",
   "issue": {
     "number": 18,
     "title": "Add aria-label to the booking page duration badge",
@@ -24,5 +24,22 @@
     }
   ],
   "clarification_comment_ids": [],
-  "updated_at": 1794274206
+  "updated_at": 1794274207,
+  "pm": {
+    "summary": "Small UI change: give every duration shown on the booking page a localized screen-reader label like \"Duration: 30 minutes\", keep the visible text the same, and add a unit test. Ready for implementation.",
+    "scope_type": "ui_change",
+    "complexity": "simple",
+    "requires_plan_approval": false,
+    "acceptance_criteria": [
+      "Single-duration event (no multiple durations, not dynamic): the duration text on the booking page has an accessible name of the form \"Duration: <duration>\", e.g. a 30-minute event exposes \"Duration: 30 minutes\".",
+      "Multiple-duration event with the duration selector hidden: the selected (or default) duration text has the same kind of accessible label, matching the duration shown.",
+      "Multiple-duration or dynamic event with the selector visible: each duration option has its own accessible label with its duration (e.g. the 15 option reads \"Duration: 15 minutes\"), and the selected and clickable behavior is unchanged.",
+      "Durations of 60 minutes or more, e.g. 90, get a label that a screen reader can understand and that matches the visible value (hours and minutes). The label must not be the short visible form such as \"1h 30m\".",
+      "The visible text is the same as before for all paths (e.g. \"30m\", \"1h 30m\"). No layout or styling changes.",
+      "The label text comes from i18n. A new English key is added to packages/i18n/locales/en/common.json, and no user-facing label string is hardcoded in the component.",
+      "Other places that use getDurationFormatted, such as BookFormAsModal, show the same output as before.",
+      "A unit test inside apps/web/ renders the duration component and checks the accessible label for at least the single-duration case and one multiple-duration option. It also checks that the visible text is unchanged. The test passes."
+    ],
+    "questions": []
+  }
 }
