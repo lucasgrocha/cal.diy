@@ -1,5 +1,5 @@
 {
-  "status": "design_need",
+  "status": "plan",
   "issue": {
     "number": 18,
     "title": "Add aria-label to the booking page duration badge",
@@ -48,7 +48,7 @@
     }
   ],
   "clarification_comment_ids": [],
-  "updated_at": 1794274327,
+  "updated_at": 1794274328,
   "pm": {
     "summary": "Small UI change: give every duration shown on the booking page a localized screen-reader label like \"Duration: 30 minutes\", keep the visible text the same, and add a unit test. Ready for implementation.",
     "scope_type": "ui_change",
@@ -98,5 +98,13 @@
       "yarn workspace @calcom/web type-check",
       "yarn workspace @calcom/web lint"
     ]
-  }
+  },
+  "design_need": {
+    "summary": "No design needed: this adds screen-reader labels to the existing duration display and changes nothing visible. Next: planning.",
+    "needed": false,
+    "confidence": 0.95,
+    "design_brief": "",
+    "effective_needed": false
+  },
+  "design_required": false
 }
