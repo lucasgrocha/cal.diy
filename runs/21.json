@@ -1,5 +1,5 @@
 {
-  "status": "plan",
+  "status": "failed",
   "issue": {
     "number": 21,
     "title": "New settings page listing upcoming booking reminders",
@@ -65,7 +65,7 @@
     6756289657,
     6756838767
   ],
-  "updated_at": 1794277363,
+  "updated_at": 1794277392,
   "pm": {
     "summary": "New read-only Settings page listing reminder emails for the user's upcoming accepted hosted bookings; it is a new screen, so it goes to the Designer next. No open questions.",
     "scope_type": "screen",
@@ -157,5 +157,8 @@
     "mockup": "Nav (My Account): ... Push notifications | Booking reminders (new, right after push_notifications)\n\nDEFAULT (desktop)\n+--------------------------------------------------------------------+\n| <h1> Booking reminders                                              |\n| Reminder emails scheduled for your upcoming bookings.   (muted)    |\n|                                                                    |\n| <table aria-label=\"Booking reminders\">                             |\n| +----------------------+------------------+----------------------+ |\n| | BOOKING              | ATTENDEE         | REMINDER SENT        | |\n| +----------------------+------------------+----------------------+ |\n| | 30min with Jo...     | Jo Rivera        | Tue, Nov 17, 9:00 AM | |\n| |                      |                  | Booking: Wed, Nov 18 | |\n| +----------------------+------------------+----------------------+ |\n| | Product demo         | Ana Lima +2      | Thu, Nov 19, 2:30 PM | |\n| +----------------------+------------------+----------------------+ |\n| </table>                                                           |\n| Footnote (muted): Reminders are sent 24 hours before the booking.  |\n+--------------------------------------------------------------------+\n\nRules\n- Column order: Booking title, Attendee, Reminder send time (th scope=col).\n- Title: single line, truncate with ellipsis, full text in title attr; max ~40% width.\n- Attendees: first attendee name (email if no name) plus muted '+N'; N has title/aria-label listing the others.\n- Send time: user timezone + locale, date and time in one cell, e.g. 'Tue, Nov 17, 9:00 AM'. Booking start is secondary muted line (small text, text-subtle) in the same cell. Timezone abbreviation shown in the footnote area or on hover.\n- Sorted by send time ascending. Long list: cap at a sensible default (e.g. first 50) and show a muted note when capped; no pagination controls.\n\nMOBILE (<640px): table becomes stacked rows (block display, thead visually hidden but kept for screen readers)\n+------------------------------+\n| 30min with Jo...             |\n| Jo Rivera                    |\n| Reminder: Tue, Nov 17, 9 AM  |\n| Booking: Wed, Nov 18, 9 AM   |\n+------------------------------+\n\nEMPTY (EmptyScreen, no CTA)\n+--------------------------------------------------------------------+\n|                          [ icon: bell ]                            |\n|                  No upcoming reminders                             |\n|   Reminders for accepted bookings you host will appear here.       |\n+--------------------------------------------------------------------+\n\nLOADING: none by design (server-rendered with data, no loading.tsx).\n\nERROR: data fetch failure shows the app's existing error boundary; no custom inline error. Unauthenticated users redirect to /auth/login?callbackUrl=... as other settings pages.\n\nA11y: h1 for title; real table; no color-only meaning; text-default on bg-default for body, text-subtle for secondary (AA contrast); no interactive elements so nothing to focus except page-level links.\n\nCopy keys (common.json, en):\n  booking_reminders: Booking reminders   (nav label and page title)\n  booking_reminders_description: Reminder emails scheduled for your upcoming bookings.\n  booking_reminders_column_booking: Booking\n  attendee: Attendee  (already exists, reuse)\n  booking_reminders_column_send_time: Reminder sent\n  booking_reminders_booking_starts: Booking: {{date}}\n  booking_reminders_footnote: Reminders are sent 24 hours before the booking starts.\n  booking_reminders_empty_title: No upcoming reminders\n  booking_reminders_empty_description: Reminders for accepted bookings you host will appear here.\n  booking_reminders_list_capped: Showing the next {{count}} reminders.",
     "actor": "lucasgrocha",
     "comment_id": 6757159941
-  }
+  },
+  "resume_status": "plan",
+  "failed_step": "plan",
+  "error": "Project agent budget exhausted. No agent started."
 }
