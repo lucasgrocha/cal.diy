@@ -1,5 +1,5 @@
 {
-  "reserved_agent_usd": 260,
+  "reserved_agent_usd": 280,
   "runs": [
     {
       "key": "18-42732738090-1-pm-42732738090-1-9b954f322dde",
@@ -136,6 +136,10 @@
     {
       "key": "18-42739934749-1-evaluate-42739934749-1-1bd7fa040aaa",
       "usd": 5
+    },
+    {
+      "key": "18-42739934749-1-implement-42739934749-1-1bd7fa040aaa",
+      "usd": 20
     }
   ]
 }
