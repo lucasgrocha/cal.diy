@@ -33,10 +33,22 @@
         "total_cost_usd": 0.4074937999999999
       },
       "denied_tools": []
+    },
+    {
+      "name": "design_need",
+      "sha": "9b954f322ddec50f76000626997eddc150c8cf2f",
+      "agent": "pm",
+      "at": 1794272688,
+      "usage": {
+        "input_tokens": 2,
+        "output_tokens": 213,
+        "total_cost_usd": 0.07296399999999999
+      },
+      "denied_tools": []
     }
   ],
   "clarification_comment_ids": [],
-  "updated_at": 1794272650,
+  "updated_at": 1794272688,
   "pm": {
     "summary": "Small accessibility fix to the booking page duration display: add a localized \"Duration: X minutes\" accessible label and leave the visible text as it is. Ready for implementation with a unit test.",
     "scope_type": "ui_change",
