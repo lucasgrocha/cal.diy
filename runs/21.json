@@ -9,9 +9,22 @@
   "base_sha": "e6aad278a4cfc3e815a0c697f312f5f4fca307b9",
   "run_id": "42736181721-1",
   "started_by": "lucasgrocha",
-  "stages": [],
+  "stages": [
+    {
+      "name": "pm",
+      "sha": "e6aad278a4cfc3e815a0c697f312f5f4fca307b9",
+      "agent": "pm",
+      "at": 1794274234,
+      "usage": {
+        "input_tokens": 2,
+        "output_tokens": 601,
+        "total_cost_usd": 0.0123761
+      },
+      "denied_tools": []
+    }
+  ],
   "clarification_comment_ids": [
     6756289657
   ],
-  "updated_at": 1794274205
+  "updated_at": 1794274234
 }
