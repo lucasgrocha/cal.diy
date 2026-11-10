@@ -1,5 +1,5 @@
 {
-  "status": "pm",
+  "status": "research",
   "issue": {
     "number": 21,
     "title": "New settings page listing upcoming booking reminders",
@@ -26,5 +26,27 @@
   "clarification_comment_ids": [
     6756289657
   ],
-  "updated_at": 1794274234
+  "updated_at": 1794274235,
+  "pm": {
+    "summary": "New read-only Settings page listing reminder emails for the host's upcoming bookings, send time fixed at 24h before start. This is a new screen, so it goes to the Designer next.",
+    "scope_type": "screen",
+    "complexity": "complex",
+    "requires_plan_approval": true,
+    "acceptance_criteria": [
+      "A new page is reachable from the Settings navigation, with a clear title such as 'Booking reminders'.",
+      "The page lists one row per upcoming booking where the logged-in user is the organizer/host, showing booking title, attendee, and send time.",
+      "Send time equals the booking start time minus exactly 24 hours, shown in the user's timezone and locale format.",
+      "Bookings where the user is only an attendee are not listed.",
+      "Cancelled, rejected and past bookings are not listed.",
+      "Reminders whose computed send time is already in the past are still listed only if the booking is upcoming (decision: show them as is, no special state).",
+      "Rows are ordered by send time ascending.",
+      "When there are no matching bookings, an empty state with explanatory text is shown.",
+      "The page is read-only: no buttons or forms to edit, send or cancel reminders.",
+      "A logged-out user cannot access the page or its data; one user never sees another user's bookings.",
+      "No scheduler, database schema or migration changes are introduced.",
+      "All user-visible strings are in the English locale file.",
+      "Tests cover the 24h computation, host-only filtering and the empty state."
+    ],
+    "questions": []
+  }
 }
