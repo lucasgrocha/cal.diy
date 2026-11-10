@@ -1,5 +1,5 @@
 {
-  "status": "needs_information",
+  "status": "pm",
   "issue": {
     "number": 21,
     "title": "New settings page listing upcoming booking reminders",
@@ -7,41 +7,9 @@
   },
   "issue_digest": "922d881c4480825df16d84ca56e6ab7d772ea185d8877ed8d23849de6ff05419",
   "base_sha": "e6aad278a4cfc3e815a0c697f312f5f4fca307b9",
-  "run_id": "42735863516-1",
+  "run_id": "42735864694-1",
   "started_by": "lucasgrocha",
-  "stages": [
-    {
-      "name": "pm",
-      "sha": "e6aad278a4cfc3e815a0c697f312f5f4fca307b9",
-      "agent": "pm",
-      "at": 1794274070,
-      "usage": {
-        "input_tokens": 8,
-        "output_tokens": 1194,
-        "total_cost_usd": 0.042121099999999995
-      },
-      "denied_tools": []
-    }
-  ],
+  "stages": [],
   "clarification_comment_ids": [],
-  "updated_at": 1794274071,
-  "pm": {
-    "summary": "New read-only Settings page is feasible UI-wise, but the codebase has no model of scheduled reminders with send times. I need a decision on the data source before design.",
-    "scope_type": "screen",
-    "complexity": "complex",
-    "requires_plan_approval": true,
-    "acceptance_criteria": [
-      "A new entry appears in the Settings navigation and opens the new page for a logged-in user.",
-      "The page lists reminders for the user's upcoming bookings only (not past or cancelled bookings).",
-      "Each row shows booking title, attendee, and scheduled send time, shown in the user's timezone.",
-      "The page is read-only: no edit, cancel or create actions.",
-      "When there are no upcoming reminders, an empty state with explanatory text is shown.",
-      "A user sees only their own bookings' reminders, never other users'.",
-      "All visible strings are translated via the i18n locale file.",
-      "Unauthenticated users are redirected to login."
-    ],
-    "questions": [
-      "The code has no data on scheduled reminder emails (ReminderMail only logs sent pending-confirmation reminders, with no send time). Should the page show computed reminders (e.g. derived from booking start time minus a fixed offset), or should we limit scope to something else?"
-    ]
-  }
+  "updated_at": 1794274092
 }
