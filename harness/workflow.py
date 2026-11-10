@@ -44,7 +44,7 @@ class Workflow:
         if event_name == "workflow_dispatch":
             number, action = int(event["inputs"]["issue_number"]), "start"
         elif event_name == "issues":
-            if event["action"] == "labeled" and event["label"]["name"] != c.config["label"]:
+            if event["action"] != "labeled" or event["label"]["name"] != c.config["label"]:
                 return {"next": ""}
             number, action = event["issue"]["number"], "start"
         elif event_name == "issue_comment":
@@ -68,9 +68,13 @@ class Workflow:
         name, argument = decision
         comment_id = event["comment"]["id"]
         if name == "reply":
-            # The answer becomes part of the issue text and the task restarts from the PM.
-            ids = c.state.get("clarification_comment_ids", []) + [comment_id]
-            c.state["clarification_comment_ids"] = ids
+            # The answer becomes part of the issue text. Planner questions go back to planning with
+            # the PM's decision, research and design kept; anything else restarts from the PM.
+            c.state["clarification_comment_ids"] = c.state.get("clarification_comment_ids", []) + [comment_id]
+            if c.state.get("asked_by") == "plan" and c.gh.head(c.config["base_branch"]) == c.state["base_sha"]:
+                issue = issue_snapshot(c.current_issue())
+                c.save("plan", issue=issue, issue_digest=digest(issue), asked_by=None)
+                return {"next": "plan"}
             return self.start(actor)
         if name == "handoff":
             c.save(handoff={"actor": actor, "comment_id": comment_id, "at": int(time.time()), "brief": brief(number, c.state)})
@@ -198,7 +202,8 @@ class Workflow:
             c.comment("planning", "The plan is outside the scope the harness may change.", details=str(error),
                       decision="Comment `/revise <changes>` or make the change in a separate PR.")
             return {"next": ""}
-        c.save(target, plan=plan, evaluation=evaluation, plan_fingerprint=fingerprint)
+        c.save(target, plan=plan, evaluation=evaluation, plan_fingerprint=fingerprint,
+               asked_by="plan" if target == "needs_information" else None)
         details = "\n".join([f"- Files: {', '.join(plan['files'])}", "- Criteria:",
                              *[f"  - {x}" for x in plan["acceptance_criteria"]], "- Steps:", *[f"  - {x}" for x in plan["steps"]],
                              f"- Risk: {plan['risk']} · eval: {evaluation['score']:.2f}"])

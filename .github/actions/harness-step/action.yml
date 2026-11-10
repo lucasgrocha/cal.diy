@@ -34,6 +34,9 @@ runs:
         cp -R .claude/agents "$RUNNER_TEMP/harness-controller/agents"
     - if: inputs.yarn == 'true'
       uses: ./.github/actions/yarn-install
+    - if: inputs.yarn == 'true'
+      shell: bash
+      run: yarn prisma generate
     - if: inputs.step != 'entry' && inputs.step != 'review_gate' && inputs.step != 'merge'
       shell: bash
       run: npm install --global --silent @anthropic-ai/claude-code@2.1.311
