@@ -1,0 +1,15 @@
+{
+  "status": "pm",
+  "issue": {
+    "number": 18,
+    "title": "Add aria-label to the booking page duration badge",
+    "body": "Harness test (simple change). In apps/web/modules/bookings/components/event-meta/Duration.tsx, give the duration text an accessible label like \"Duration: 30 minutes\" (localized, English key in packages/i18n/locales/en/common.json) without changing the visible text. Include a unit test."
+  },
+  "issue_digest": "5da1cac355d39c8c6fe1a3ba7c75cb02742e9781cd5823d24d4c1f16f0c81dd0",
+  "base_sha": "9b954f322ddec50f76000626997eddc150c8cf2f",
+  "run_id": "42732738090-1",
+  "started_by": "lucasgrocha",
+  "stages": [],
+  "clarification_comment_ids": [],
+  "updated_at": 1794272516
+}
