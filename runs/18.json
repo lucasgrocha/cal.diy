@@ -100,7 +100,7 @@
     }
   ],
   "clarification_comment_ids": [],
-  "updated_at": 1794273832,
+  "updated_at": 1794273836,
   "pm": {
     "summary": "Small accessibility fix to the booking page duration display: add a localized \"Duration: X minutes\" accessible label and leave the visible text as it is. Ready for implementation with a unit test.",
     "scope_type": "ui_change",
@@ -227,27 +227,24 @@
   },
   "plan_fingerprint": "877c5dcd026aa82cedec1d7123cf53ae445bc85dbc43c3de84c009ebbac28e33",
   "branch": "harness/issue-18",
-  "head_sha": "fb90c5720a0d52c8f972a512e2e55f44f679afd6",
+  "head_sha": "875f0f0f11a4a3917d9c588a5f33b240d1e5999d",
   "pr_number": 19,
   "pr_url": "https://github.com/lucasgrocha/cal.diy/pull/19",
   "implementation": {
-    "summary": "I added a localized \"Duration: X\" aria-label to the booking page duration display, plus one English key and a unit test that passes. Visible text is unchanged. Next: controller validation.",
+    "summary": "Lint fixed by reordering imports; Duration tests pass. Type-check still fails because the tRPC package's generated types are missing, which is outside scope. Next: re-run lint and judge type-check with tRPC types built.",
     "files": [
       "apps/web/modules/bookings/components/event-meta/Duration.tsx",
-      "packages/i18n/locales/en/common.json",
       "apps/web/modules/bookings/components/event-meta/Duration.test.tsx"
     ],
     "verification": [
-      "`TZ=UTC yarn vitest run apps/web/modules/bookings/components/event-meta/Duration.test.tsx`: 11 of 11 tests pass. They cover single durations of 1, 30, 60, 90 and 120 minutes; the hidden-selector case with a selected duration and with the event-length fallback; selector options (aria-label, visible text, data-active, and click calling setSelectedDuration); getDurationAriaLabel returning null; and getDurationFormatted output being unchanged.",
-      "`TZ=UTC yarn vitest run apps/web/modules/bookings/components/Booker.test.tsx` (regression): 4 of 4 tests pass.",
-      "`yarn biome lint` on Duration.tsx and Duration.test.tsx: no errors. Only nursery-level warnings and infos remain, and they follow patterns already in the file (noTernary, useExplicitType, useSortedClasses).",
-      "`yarn workspace @calcom/web type-check` exits 2 because of many errors that were already there (tRPC types such as @calcom/trpc/types/server/routers/_app are not generated in this environment). Filtering tsc output for event-meta/Duration and BookFormAsModal gives 0 errors, after fixing one cast in the new test.",
-      "The test does not rely on the mocks in apps/web/modules/test-setup.ts. The vitest 4 root config (vitest.config.mts) only loads packages/testing/src/setupVitest.ts, so the test mocks useLocale, embed-iframe (useIsEmbed returns true), useIsPlatform and AllApps itself.",
-      "getDurationFormatted is unchanged. The new key duration_aria_label is inserted directly above the ADD_NEW_STRINGS marker in en/common.json, and no other locales were changed.",
-      "The full `yarn test` suite was not run."
+      "yarn biome check --diagnostic-level=error on Duration.test.tsx, Duration.tsx and en/common.json: no errors ('Checked 3 files... No fixes applied').",
+      "Biome's automatic fix only reordered import lines in the two files (reviewed with git diff).",
+      "TZ=UTC yarn vitest run apps/web/modules/bookings/components/event-meta/Duration.test.tsx: 1 file, 11 tests passed.",
+      "yarn workspace @calcom/web type-check: 597 errors in 156 files; filtering for event-meta, Duration or common.json finds 0 errors in the changed files.",
+      "Type-check errors come from missing @calcom/trpc/types/server/* (packages/trpc/types does not exist; tRPC is not built), which breaks every trpc.* use. Fixing this needs a build/tooling change outside plan.files. Not checked whether main fails the same way."
     ]
   },
-  "attempts": 1,
+  "attempts": 2,
   "check_evidence": {
     "head_sha": "fb90c5720a0d52c8f972a512e2e55f44f679afd6",
     "base_sha": "9b954f322ddec50f76000626997eddc150c8cf2f",
