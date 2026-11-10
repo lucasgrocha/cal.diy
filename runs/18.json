@@ -57,10 +57,22 @@
         "total_cost_usd": 0.2174434
       },
       "denied_tools": []
+    },
+    {
+      "name": "evaluate",
+      "sha": "e6aad278a4cfc3e815a0c697f312f5f4fca307b9",
+      "agent": "planning",
+      "at": 1794274423,
+      "usage": {
+        "input_tokens": 8,
+        "output_tokens": 3112,
+        "total_cost_usd": 0.1851862
+      },
+      "denied_tools": []
     }
   ],
   "clarification_comment_ids": [],
-  "updated_at": 1794274390,
+  "updated_at": 1794274423,
   "pm": {
     "summary": "Small UI change: give every duration shown on the booking page a localized screen-reader label like \"Duration: 30 minutes\", keep the visible text the same, and add a unit test. Ready for implementation.",
     "scope_type": "ui_change",
