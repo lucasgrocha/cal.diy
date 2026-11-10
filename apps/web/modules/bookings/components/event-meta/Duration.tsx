@@ -37,6 +37,25 @@ export const getDurationFormatted = (mins: number | undefined, t: TFunction) => 
   return hourStr || minStr;
 };
 
+/** Render X mins with full units (e.g. "1 hour 30 minutes"), used for accessible labels */
+export const getDurationLabelFormatted = (mins: number | undefined, t: TFunction) => {
+  if (!mins) return null;
+
+  const hours = Math.floor(mins / 60);
+  const remainingMins = mins % 60;
+  const hourStr = hours > 0 ? t("hour", { count: hours }) : "";
+  const minStr = remainingMins > 0 ? t("minute", { count: remainingMins }) : "";
+
+  if (hourStr && minStr) return `${hourStr} ${minStr}`;
+  return hourStr || minStr;
+};
+
+const DurationText = ({ mins, t }: { mins: number | undefined; t: TFunction }) => {
+  const label = getDurationLabelFormatted(mins, t);
+  if (!label) return null;
+  return <span aria-label={t("duration_label", { duration: label })}>{getDurationFormatted(mins, t)}</span>;
+};
+
 export const EventDuration = ({
   event,
 }: {
@@ -90,7 +109,7 @@ export const EventDuration = ({
   }, [selectedDuration, isEmbed]);
 
   if (!event?.metadata?.multipleDuration && !isDynamicEvent)
-    return <>{getDurationFormatted(event.length, t)}</>;
+    return <DurationText mins={event.length} t={t} />;
 
   const durations = event?.metadata?.multipleDuration || [15, 30, 60, 90];
   const hideDurationSelector = event?.metadata?.hideDurationSelectorInBookingPage;
@@ -98,7 +117,7 @@ export const EventDuration = ({
   // When duration selector is hidden, show only the selected/default duration as text
   // URL params can still set the duration, but the user cannot change it via UI
   if (hideDurationSelector) {
-    return <>{getDurationFormatted(selectedDuration || event.length, t)}</>;
+    return <DurationText mins={selectedDuration || event.length} t={t} />;
   }
 
   return selectedDuration ? (
