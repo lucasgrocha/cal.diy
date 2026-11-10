@@ -1,5 +1,5 @@
 {
-  "status": "research",
+  "status": "design_need",
   "issue": {
     "number": 18,
     "title": "Add aria-label to the booking page duration badge",
@@ -36,7 +36,7 @@
     }
   ],
   "clarification_comment_ids": [],
-  "updated_at": 1794272648,
+  "updated_at": 1794272650,
   "pm": {
     "summary": "Small accessibility fix to the booking page duration display: add a localized \"Duration: X minutes\" accessible label and leave the visible text as it is. Ready for implementation with a unit test.",
     "scope_type": "ui_change",
@@ -55,5 +55,42 @@
       "Out of scope: the visible duration format, other event-meta blocks (location, price, etc.), the BookFormAsModal duration, non-English translations, and any dependency or tooling changes."
     ],
     "questions": []
+  },
+  "research": {
+    "summary": "Research done: EventDuration renders bare text fragments, so a wrapper element plus a new i18n key is needed. The tests need their own translation mock. Next: write the plan.",
+    "kind": "feature",
+    "relevant_files": [
+      "apps/web/modules/bookings/components/event-meta/Duration.tsx",
+      "apps/web/modules/bookings/components/event-meta/Duration.test.tsx",
+      "packages/i18n/locales/en/common.json",
+      "apps/web/modules/bookings/components/event-meta/Details.tsx",
+      "apps/web/modules/bookings/components/BookEventForm/BookFormAsModal.tsx",
+      "apps/web/modules/test-setup.ts",
+      "packages/features/bookings/Booker/__tests__/test-utils.tsx",
+      "apps/web/modules/bookings/components/Booker.test.tsx",
+      "apps/web/modules/bookings/components/DatePicker.test.tsx",
+      "apps/web/modules/shell/user-dropdown/UserDropdown.test.tsx",
+      "vitest.workspace.ts"
+    ],
+    "patterns": [
+      "Cause: Duration.tsx:93 and :101 return getDurationFormatted(...) inside a bare fragment (<>...</>), so no element can hold an aria-label. A non-layout-changing wrapper (e.g. a plain <span>) is needed there. In the selector branch (:121-131), the aria-label can go on the existing <li> (keep data-testId, data-active and onClick) or on the inner <div className=\"w-max\">.",
+      "getDurationFormatted (Duration.tsx:14-38) uses the short keys minute_one_short/hour_one_short/multiple_duration_timeUnit_short. It is also imported by BookFormAsModal.tsx:12/68, so it must not change. Add a separate long-form helper (e.g. getDurationAriaLabel) in Duration.tsx.",
+      "en/common.json already has plural long-form keys: minute_one \"{{count}} minute\" / minute_other \"{{count}} minutes\" (lines 1805/1807), hour_one / hour_other (1808/1810), and \"duration\": \"Duration\" (920). Use t(\"minute\", { count }) / t(\"hour\", { count }) for the units, and add one new key such as \"duration_aria_label\": \"Duration: {{duration}}\" above the ADD_NEW_STRINGS_ABOVE_THIS_LINE marker at the end of the file.",
+      "aria-label convention in apps/web: aria-label={t(\"key\")} (e.g. webhooks/components/WebhookListItem.tsx:215).",
+      "EventDuration is rendered only by Details.tsx:146 inside EventMetaBlock (icon=clock, className items-center). The visible text and classes must not change.",
+      "Test project: vitest.workspace.ts project '@calcom/web/modules/views' (jsdom) includes apps/web/modules/**/*.{test,spec}.tsx, with setupFiles apps/web/modules/test-setup.ts. That setup globally mocks @calcom/lib/hooks/useLocale with t = identity and mocks @calcom/embed-core/embed-iframe (useIsEmbed vi.fn). afterEach calls vi.resetAllMocks.",
+      "Because the global t mock returns the raw key, the new test must provide its own vi.mock('@calcom/lib/hooks/useLocale') whose t interpolates {{count}}/{{duration}}/{{unit}} and picks _one/_other plural forms (and handles the nested $t(...) used by the short keys) so it can check 'Duration: 30 minutes' and the visible '30m'. Another option is a real i18next createInstance loaded with en/common.json (i18next 23.2.3 is an apps/web dependency).",
+      "The test also needs to mock @calcom/atoms/hooks/useIsPlatform (as in Booker.test.tsx:105) and @calcom/web/modules/apps/components/AllApps useShouldShowArrows (returning { ref: { current: null }, calculateScroll: vi.fn(), leftVisible: false, rightVisible: false }), because AllApps pulls in heavy dependencies.",
+      "Booker store: use render from @calcom/features/bookings/Booker/__tests__/test-utils with mockStore { selectedDuration, state } to cover the hidden-selector and selector cases (pattern from DatePicker.test.tsx).",
+      "Test file style: colocated *.test.tsx next to the component (e.g. apps/web/modules/bookings/components/DatePicker.test.tsx), using describe/test from vitest globals and @testing-library/react screen queries.",
+      "Commit style: only one merge commit is visible (Merge pull request #17 from lucasgrocha/ci/harness-orquestracao), so there is little commit history to infer conventions from.",
+      "Unresolved for plan: whether the aria-label goes on the <li> or on the inner <div> in selector mode, and whether to add role=\"img\" or another role to the wrapper <span> so screen readers announce the aria-label of a non-interactive element."
+    ],
+    "test_commands": [
+      "TZ=UTC yarn vitest run apps/web/modules/bookings/components/event-meta/Duration.test.tsx",
+      "yarn test",
+      "yarn workspace @calcom/web lint",
+      "yarn workspace @calcom/web type-check"
+    ]
   }
 }
