@@ -1,5 +1,5 @@
 {
-  "status": "testing",
+  "status": "failed",
   "issue": {
     "number": 18,
     "title": "Add aria-label to the booking page duration badge",
@@ -124,7 +124,7 @@
     }
   ],
   "clarification_comment_ids": [],
-  "updated_at": 1794275961,
+  "updated_at": 1794275962,
   "pm": {
     "summary": "Small UI change: give every duration shown on the booking page a localized screen-reader label like \"Duration: 30 minutes\", keep the visible text the same, and add a unit test. Ready for implementation.",
     "scope_type": "ui_change",
@@ -381,5 +381,8 @@
       "The i18n test uses a locally mocked t. It checks the template wiring, not the real en/common.json values, although I confirmed by reading the file that the hour/minute plural keys and the new key exist.",
       "The CI evidence did not run the plan's extra command, `yarn test apps/web/modules/bookings/components/event-meta`, as a separate folder run. The 'related' run covered Duration.test.tsx and Booker.test.tsx."
     ]
-  }
+  },
+  "resume_status": "testing",
+  "failed_step": "test",
+  "error": "CI found a failure."
 }
