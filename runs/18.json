@@ -45,10 +45,22 @@
         "total_cost_usd": 0.015532500000000001
       },
       "denied_tools": []
+    },
+    {
+      "name": "plan",
+      "sha": "1bd7fa040aaae822081bbede18740e2cba202039",
+      "agent": "planning",
+      "at": 1794276372,
+      "usage": {
+        "input_tokens": 4,
+        "output_tokens": 1618,
+        "total_cost_usd": 0.044522
+      },
+      "denied_tools": []
     }
   ],
   "clarification_comment_ids": [],
-  "updated_at": 1794276337,
+  "updated_at": 1794276372,
   "pm": {
     "summary": "Add a localized \"Duration: 30 minutes\" accessible label to the booking page duration text, with the visible text unchanged. No questions; next step is implementation with a unit test.",
     "scope_type": "ui_change",
