@@ -1,5 +1,5 @@
 {
-  "status": "research",
+  "status": "design_need",
   "issue": {
     "number": 21,
     "title": "New settings page listing upcoming booking reminders",
@@ -41,7 +41,7 @@
     6756289657,
     6756838767
   ],
-  "updated_at": 1794276241,
+  "updated_at": 1794276243,
   "pm": {
     "summary": "New read-only Settings page listing reminder emails for the user's upcoming accepted hosted bookings; it is a new screen, so it goes to the Designer next. No open questions.",
     "scope_type": "screen",
@@ -62,5 +62,36 @@
       "Changes stay within the allowed scope, with no schema, lockfile or dependency changes."
     ],
     "questions": []
+  },
+  "research": {
+    "summary": "Research done: the closest pattern is the push-notifications settings page. A server page needs a nav entry, a view, a new query for hosted accepted bookings, and en strings. Ready for the plan.",
+    "kind": "feature",
+    "relevant_files": [
+      "apps/web/app/(use-page-wrapper)/settings/(settings-layout)/my-account/push-notifications/page.tsx",
+      "apps/web/app/(use-page-wrapper)/settings/(settings-layout)/my-account/general/page.tsx",
+      "apps/web/app/(use-page-wrapper)/settings/(settings-layout)/SettingsLayoutAppDirClient.tsx",
+      "apps/web/modules/settings/my-account/push-notifications-view.tsx",
+      "apps/web/modules/settings/my-account/out-of-office-view.tsx",
+      "packages/features/bookings/repositories/BookingRepository.ts",
+      "packages/trpc/server/routers/viewer/bookings/get.handler.ts",
+      "packages/i18n/locales/en/common.json",
+      "packages/lib/dateTimeFormatter.test.ts"
+    ],
+    "patterns": [
+      "Settings pages live at apps/web/app/(use-page-wrapper)/settings/(settings-layout)/my-account/<slug>/page.tsx. They export generateMetadata via _generateMetadata(t(title), t(description), undefined, undefined, path) and render a view from apps/web/modules/settings/my-account/<slug>-view.tsx using the ~/settings/... alias.",
+      "Auth in server pages (general/page.tsx): getServerSession({ req: buildLegacyRequest(await headers(), await cookies()) }), then redirect to /auth/login?callbackUrl=<path> when there is no user id. Data comes via createRouterCaller or a server fetch and is passed to a client view as props. This fits the 'no loading.tsx' rule.",
+      "Nav entry: add a child to the my_account tabs in SettingsLayoutAppDirClient.tsx (name key, href, trackingMetadata { section: 'my_account', page }), next to push_notifications.",
+      "Strings go in packages/i18n/locales/en/common.json as snake_case keys (e.g. push_notifications). The nav name and the page title/description use the same key convention. Only English is edited.",
+      "Data: no existing 'upcoming hosted accepted bookings' query was confirmed. get.handler.ts only has bookings filters, which are not guaranteed to cover this case. The BookingRepository in packages/features/bookings/repositories has many find* methods with Prisma queries using BookingStatus.ACCEPTED. A new narrow repository method (userId = host, status ACCEPTED, startTime > now, select title, startTime, attendees) is the likely shape. The planner must decide between this and a tRPC route; avoid schema changes.",
+      "Send time = startTime minus 24h, computed in a small pure helper, e.g. in packages/lib/, so it can be unit-tested. Format dates with existing helpers/useLocale (see packages/lib/dateTimeFormatter.ts).",
+      "Read-only list with an empty state. Look for an existing EmptyScreen in @calcom/ui/components/empty-screen and use it. No loading.tsx.",
+      "Human-review paths in scope: packages/features/bookings/lib/, packages/features/auth/, packages/lib/server/. Place new code outside them (e.g. packages/features/bookings/repositories/ or packages/lib/) where possible."
+    ],
+    "test_commands": [
+      "TZ=UTC yarn vitest run <path-to-new-test-file>  (root script: \"test\": \"TZ=UTC vitest run\")",
+      "yarn test  (runs the whole suite)",
+      "yarn lint  (turbo lint)",
+      "yarn type-check  (turbo run type-check; CI uses yarn type-check:ci)"
+    ]
   }
 }
