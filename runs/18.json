@@ -1,5 +1,5 @@
 {
-  "status": "research",
+  "status": "design_need",
   "issue": {
     "number": 18,
     "title": "Add aria-label to the booking page duration badge",
@@ -36,7 +36,7 @@
     }
   ],
   "clarification_comment_ids": [],
-  "updated_at": 1794276306,
+  "updated_at": 1794276307,
   "pm": {
     "summary": "Add a localized \"Duration: 30 minutes\" accessible label to the booking page duration text, with the visible text unchanged. No questions; next step is implementation with a unit test.",
     "scope_type": "ui_change",
@@ -52,5 +52,32 @@
       "Existing tests for Duration.tsx and getDurationFormatted still pass, and all edits stay within the allowed scope."
     ],
     "questions": []
+  },
+  "research": {
+    "summary": "Duration.tsx renders bare text in two branches, so the label needs a wrapper. Plan next: add a new `duration_label` key, a full-unit formatter and a test in apps/web/modules.",
+    "kind": "feature",
+    "relevant_files": [
+      "apps/web/modules/bookings/components/event-meta/Duration.tsx",
+      "apps/web/modules/bookings/components/event-meta/Details.tsx",
+      "packages/i18n/locales/en/common.json",
+      "apps/web/modules/bookings/components/DatePicker.test.tsx",
+      "packages/features/bookings/Booker/__tests__/test-utils.tsx",
+      "vitest.workspace.ts",
+      "apps/web/modules/test-setup.ts"
+    ],
+    "patterns": [
+      "Duration.tsx: EventDuration returns a bare fragment `<>{getDurationFormatted(...)}</>` in two places: single fixed duration (line 93) and hideDurationSelector (line 101). Neither has an element to hold aria-label, so each needs a wrapper such as `<span aria-label={...}>`. A span adds no styling, since the parent EventMetaBlock supplies it. The multi-duration selector (`<div><ul><li>`) must stay untouched.",
+      "getDurationFormatted(mins, t) produces only SHORT text, such as \"30m\", \"1h\" and \"1h 30m\", from keys minute_one_short, hour_one_short and multiple_duration_timeUnit_short. The label needs full units, so add a helper that reuses the existing plural keys minute_one/minute_other and hour_one/hour_other (en common.json ~1805-1810). Example: t(\"hour\", {count}) and t(\"minute\", {count}) joined with a space. Do not change getDurationFormatted's output, which is exported and tested.",
+      "i18n: add a key such as `\"duration_label\": \"Duration: {{duration}}\"` to packages/i18n/locales/en/common.json only. Existing `duration` is \"Duration\" at line 920, and other locales are filled by tooling. Check the duplicate key and the alphabetical or grouping convention near line 920 before adding.",
+      "Rendering context: Details.tsx:143-147 wraps EventDuration in EventMetaBlock (icon clock). Be aware that aria-label on a plain span has weak support without a role. Consider a visually-unchanged wrapper with the visible text inside, and consider `role=\"text\"` or an sr-only alternative only if the PM's criteria allow it. The criteria call for an aria-label, so use aria-label and assert it with getByLabelText.",
+      "Test: new file apps/web/modules/bookings/components/event-meta/Duration.test.tsx. The vitest.workspace.ts project covering `apps/web/modules/**/*.{test,spec}.tsx` (line 188) uses jsdom and setupFiles apps/web/modules/test-setup.ts. Follow DatePicker.test.tsx, which uses `render` from @calcom/features/bookings/Booker/__tests__/test-utils and vi.mock. Mock useLocale to return a t that resolves the English keys, or use the real i18n setup if test-setup provides it. Mock useBookerStoreContext, useIsPlatform, useIsEmbed and useShouldShowArrows (from @calcom/web/modules/apps/components/AllApps) as needed. Cases: fixed 30 min gives label \"Duration: 30 minutes\" and visible \"30m\"; 90 min gives \"Duration: 1 hour 30 minutes\"; hideDurationSelector with multipleDuration and selectedDuration; multiple-duration selector has no label and its options still render and click.",
+      "Commit style: merge-commit PRs from branches, with conventional-style prefixes like `ci/...`. Check `git log --oneline -20` at plan time. Scope: all edits fall under apps/web/ and packages/i18n/locales/. No human-review prefixes are touched."
+    ],
+    "test_commands": [
+      "TZ=UTC yarn vitest run apps/web/modules/bookings/components/event-meta/Duration.test.tsx",
+      "TZ=UTC yarn vitest run apps/web/modules/bookings/components",
+      "yarn workspace @calcom/web type-check",
+      "yarn workspace @calcom/web lint"
+    ]
   }
 }
