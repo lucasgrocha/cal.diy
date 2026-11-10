@@ -1,5 +1,5 @@
 {
-  "status": "research",
+  "status": "design_need",
   "issue": {
     "number": 18,
     "title": "Add aria-label to the booking page duration badge",
@@ -36,7 +36,7 @@
     }
   ],
   "clarification_comment_ids": [],
-  "updated_at": 1794274290,
+  "updated_at": 1794274291,
   "pm": {
     "summary": "Small UI change: give every duration shown on the booking page a localized screen-reader label like \"Duration: 30 minutes\", keep the visible text the same, and add a unit test. Ready for implementation.",
     "scope_type": "ui_change",
@@ -53,5 +53,38 @@
       "A unit test inside apps/web/ renders the duration component and checks the accessible label for at least the single-duration case and one multiple-duration option. It also checks that the visible text is unchanged. The test passes."
     ],
     "questions": []
+  },
+  "research": {
+    "summary": "Research is done. Duration.tsx shows the duration in three places, two of them bare fragments with no element to carry a label, and existing pluralized i18n keys can produce the long form. Next: planning.",
+    "kind": "feature",
+    "relevant_files": [
+      "apps/web/modules/bookings/components/event-meta/Duration.tsx",
+      "apps/web/modules/bookings/components/event-meta/Duration.test.tsx",
+      "packages/i18n/locales/en/common.json",
+      "apps/web/modules/bookings/components/event-meta/Details.tsx",
+      "apps/web/modules/bookings/components/BookEventForm/BookFormAsModal.tsx",
+      "apps/web/modules/test-setup.ts",
+      "packages/features/bookings/Booker/__tests__/test-utils.tsx",
+      "apps/web/modules/bookings/components/DatePicker.test.tsx",
+      "apps/web/modules/bookings/components/Booker.test.tsx",
+      "vitest.workspace.ts"
+    ],
+    "patterns": [
+      "Duration.tsx has three render paths. Line 93 (single duration) and line 101 (hidden selector) return a bare fragment `<>{getDurationFormatted(...)}</>`, so there is no element to put an aria-label on. Line 131 (multiple durations or a dynamic event, selector visible) renders `<li data-testId=multiple-choice-${duration}mins data-active ... onClick>` with an inner `<div className=\"w-max\">`.",
+      "getDurationFormatted(mins, t) at Duration.tsx:14 builds the short visible form from the keys minute_one_short (\"{{count}}m\"), hour_one_short (\"{{count}}h\") and multiple_duration_timeUnit_short. It is also imported by BookFormAsModal.tsx:68, so changing what it returns would change the modal's output.",
+      "Existing pluralized long-form keys in en/common.json can build a readable label without a new formatter key: minute_one/minute_other (\"{{count}} minute(s)\", lines 1805-1807) and hour_one/hour_other (lines 1808-1810), called as t(\"minute\", { count }) or t(\"hour\", { count }). \"duration\": \"Duration\" already exists at line 920. Duration keys sit around lines 920-927 (duration, multiple_duration_*). The en file has no existing *_aria_label key to follow for naming.",
+      "EventDuration is rendered by Details.tsx:146 inside EventMetaBlock (icon=\"clock\"). It is the only consumer of the component.",
+      "Test infrastructure: the vitest workspace project '@calcom/web/modules/views' picks up apps/web/modules/**/*.{test,spec}.tsx with jsdom and setupFiles apps/web/modules/test-setup.ts. That setup file already mocks @calcom/embed-core/embed-iframe (useIsEmbed: vi.fn()) and mocks useLocale so that t returns the key unchanged. To assert interpolated text like \"Duration: 30 minutes\", a test needs a local vi.mock of @calcom/lib/hooks/useLocale with a t that interpolates, or it can assert on the key and params.",
+      "Store-backed render helper: `render` from @calcom/features/bookings/Booker/__tests__/test-utils accepts { mockStore: Partial<BookerStore> } (selectedDuration, state, setSelectedDuration), as used in DatePicker.test.tsx. Booker.test.tsx shows the vi.mock pattern for @calcom/atoms/hooks/useIsPlatform, which EventDuration also imports. EventDuration also imports useShouldShowArrows from @calcom/web/modules/apps/components/AllApps, a plain hook (refs and state) that may need a mock if the import pulls in heavy dependencies.",
+      "Tests live next to their components (e.g. apps/web/modules/bookings/components/DatePicker.test.tsx), so the natural test location is apps/web/modules/bookings/components/event-meta/Duration.test.tsx.",
+      "None of the touched files is under a human_review prefix. Both Duration.tsx and en/common.json are within the allowed scope.",
+      "No CLAUDE.md or CONTRIBUTING.md in the repo root. Formatting and linting use biome (biome.json at the root; apps/web lint script is `biome lint .`)."
+    ],
+    "test_commands": [
+      "TZ=UTC yarn vitest run apps/web/modules/bookings/components/event-meta/Duration.test.tsx",
+      "yarn test apps/web/modules/bookings/components/event-meta",
+      "yarn workspace @calcom/web type-check",
+      "yarn workspace @calcom/web lint"
+    ]
   }
 }
