@@ -1,5 +1,5 @@
 {
-  "status": "pm",
+  "status": "research",
   "issue": {
     "number": 21,
     "title": "New settings page listing upcoming booking reminders",
@@ -27,5 +27,26 @@
     6756289657,
     6756838767
   ],
-  "updated_at": 1794276187
+  "updated_at": 1794276188,
+  "pm": {
+    "summary": "New read-only Settings page listing reminder emails for the user's upcoming accepted hosted bookings; it is a new screen, so it goes to the Designer next. No open questions.",
+    "scope_type": "screen",
+    "complexity": "complex",
+    "requires_plan_approval": true,
+    "acceptance_criteria": [
+      "A new page is reachable from the Settings navigation and shows a list of scheduled booking reminders.",
+      "Each row shows booking title, attendee, and reminder send time.",
+      "Send time is computed as exactly 24 hours before the booking start time, with no new scheduler or schema change.",
+      "Only upcoming bookings (start time in the future) are listed.",
+      "Only bookings where the signed-in user is the host/organizer are listed; bookings where they are only an attendee are excluded.",
+      "Only ACCEPTED bookings are listed; PENDING (and other statuses) are excluded.",
+      "When there are no matching bookings, an empty state is shown.",
+      "The page is read-only: no edit, delete or create actions.",
+      "No loading.tsx skeleton is added for the page.",
+      "Another user's bookings are never shown; unauthenticated access is redirected as for other Settings pages.",
+      "User-facing strings are added to the English locale file.",
+      "Changes stay within the allowed scope, with no schema, lockfile or dependency changes."
+    ],
+    "questions": []
+  }
 }
