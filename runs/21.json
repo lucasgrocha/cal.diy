@@ -1,5 +1,5 @@
 {
-  "status": "awaiting_design_selection",
+  "status": "plan",
   "issue": {
     "number": 21,
     "title": "New settings page listing upcoming booking reminders",
@@ -62,7 +62,7 @@
   "clarification_comment_ids": [
     6756289657
   ],
-  "updated_at": 1794274374,
+  "updated_at": 1794274821,
   "pm": {
     "summary": "New read-only Settings page listing reminder emails for the host's upcoming bookings, send time fixed at 24h before start. This is a new screen, so it goes to the Designer next.",
     "scope_type": "screen",
@@ -150,5 +150,12 @@
       }
     ]
   },
-  "selected_design": null
+  "selected_design": {
+    "id": 1,
+    "title": "Responsive table (stacked rows on mobile)",
+    "summary": "Settings-style bordered table with columns Booking, Attendee, Send time. Below the sm breakpoint each row becomes a stacked block. Densest and easiest to scan; closest to existing settings lists.",
+    "mockup": "NAV (My account): ... Appearance | Out of office | Booking reminders | Push notifications ...\n\nPOPULATED (desktop)\n+--------------------------------------------------------------------+\n| Booking reminders                                                  |\n| Reminder emails scheduled for your upcoming bookings.              |\n+--------------------------------------------------------------------+\n| BOOKING             | ATTENDEE                    | SEND TIME       |\n|---------------------|-----------------------------|-----------------|\n| 30 min intro call   | Ana Lima                    | Nov 11, 2026    |\n|                     | ana@example.com             | 9:00 AM         |\n| Product demo with a | Bo Chen +2                  | Nov 12, 2026    |\n| very long ti...     | bo@exampl... (tooltip: all) | 2:30 PM         |\n+--------------------------------------------------------------------+\n(+N = Badge with Tooltip listing every attendee; name/title/email truncate with ellipsis and title attribute)\n\nMOBILE (<640px): column headers hidden, each row stacked\n+------------------------------+\n| 30 min intro call            |\n| Ana Lima · ana@example.com   |\n| Sends Nov 11, 2026, 9:00 AM  |\n+------------------------------+\n\nEMPTY (EmptyScreen, no CTA)\n+--------------------------------------------------------------------+\n|                          (bell icon)                               |\n|                   No upcoming reminders                            |\n|  Reminders are sent 24 hours before your upcoming bookings.        |\n|  They will show up here once someone books a time with you.        |\n+--------------------------------------------------------------------+\n\nLOADING: server-rendered; optional SkeletonText rows (3) in a loading.tsx.\nERROR: server fetch failure falls to the Next error boundary; inline Alert (severity error) 'Could not load booking reminders. Try again later.'\nA11Y: real <table> with <caption class=sr-only>, th scope=col, <time dateTime> for send time, no interactive controls except focusable tooltip triggers.\n\nCOMPONENTS: SettingsHeader, EmptyScreen, Badge, Tooltip, SkeletonText, Alert (packages/ui), ClockIcon/BellIcon from @coss/ui/icons.\nCOPY KEYS: booking_reminders='Booking reminders'; booking_reminders_description='Reminder emails scheduled for your upcoming bookings.'; booking_reminders_column_booking='Booking'; ..._column_attendee='Attendee'; ..._column_send_time='Send time'; booking_reminders_empty_title='No upcoming reminders'; booking_reminders_empty_description='Reminders are sent 24 hours before your upcoming bookings. They will show up here once someone books a time with you.'; booking_reminders_load_error='Could not load booking reminders. Try again later.'; booking_reminders_more_attendees='+{{count}} more'",
+    "actor": "lucasgrocha",
+    "comment_id": 6756467505
+  }
 }
