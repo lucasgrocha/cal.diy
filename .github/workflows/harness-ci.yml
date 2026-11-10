@@ -1,0 +1,48 @@
+# CI of the harness's candidate commits (and of their merge into main). The harness dispatches
+# it, because PRs and pushes made with GITHUB_TOKEN don't start workflows, and reads the
+# `harness-checks-<sha>` artifact as evidence of the checks actually executed.
+name: Harness CI
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_sha:
+        description: Commit the checks are measured from
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Harness / verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      NODE_OPTIONS: --max-old-space-size=12288
+      BASE_SHA: ${{ inputs.base_sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      # The checks script comes from main, so a candidate cannot change how it is judged.
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          path: .harness-trusted
+          sparse-checkout: harness
+          persist-credentials: false
+      - name: Fetch base commit
+        run: |
+          [[ $BASE_SHA =~ ^[0-9a-f]{40}$ ]] || { echo "::error::Invalid base_sha"; exit 1; }
+          git fetch --quiet --depth=1 origin "$BASE_SHA"
+      - uses: ./.github/actions/yarn-install
+      - name: Run checks
+        run: python3 .harness-trusted/harness/ci_checks.py "$BASE_SHA" "$GITHUB_SHA" "$RUNNER_TEMP/checks.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: harness-checks-${{ github.sha }}
+          path: ${{ runner.temp }}/checks.json
+          if-no-files-found: error

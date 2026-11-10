@@ -1,0 +1,50 @@
+name: Harness step
+description: Runs one step of the issue harness (harness/workflow.py) from a copy outside the checkout.
+inputs:
+  step:
+    description: Workflow step
+    required: true
+  issue:
+    description: Issue number (all steps but entry)
+    required: false
+    default: ""
+  yarn:
+    description: Install the app's dependencies for agents that run its commands
+    required: false
+    default: "false"
+outputs:
+  next:
+    description: Job that runs next, or empty
+    value: ${{ steps.run.outputs.next }}
+  issue:
+    description: Issue number
+    value: ${{ steps.run.outputs.issue }}
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+    - shell: bash
+      run: |
+        python -m pip install --quiet jsonschema==4.23.0
+        # Agents write in the checkout; the controller and agent definitions they're judged by live outside it.
+        mkdir -p "$RUNNER_TEMP/harness-controller"
+        cp -R harness "$RUNNER_TEMP/harness-controller/harness"
+        cp -R .claude/agents "$RUNNER_TEMP/harness-controller/agents"
+    - if: inputs.yarn == 'true'
+      uses: ./.github/actions/yarn-install
+    - if: inputs.step != 'entry' && inputs.step != 'review_gate' && inputs.step != 'merge'
+      shell: bash
+      run: npm install --global --silent @anthropic-ai/claude-code@2.1.311
+    - id: run
+      shell: bash
+      env:
+        STEP: ${{ inputs.step }}
+        ISSUE: ${{ inputs.issue }}
+        PYTHONPATH: ${{ runner.temp }}/harness-controller
+        HARNESS_AGENTS_DIR: ${{ runner.temp }}/harness-controller/agents
+      run: |
+        args=(--step "$STEP")
+        if [[ -n $ISSUE ]]; then args+=(--issue "$ISSUE"); fi
+        python -m harness.workflow "${args[@]}"
