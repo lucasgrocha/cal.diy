@@ -1,5 +1,5 @@
 {
-  "status": "design_need",
+  "status": "design",
   "issue": {
     "number": 21,
     "title": "New settings page listing upcoming booking reminders",
@@ -53,7 +53,7 @@
     6756289657,
     6756838767
   ],
-  "updated_at": 1794276276,
+  "updated_at": 1794276277,
   "pm": {
     "summary": "New read-only Settings page listing reminder emails for the user's upcoming accepted hosted bookings; it is a new screen, so it goes to the Designer next. No open questions.",
     "scope_type": "screen",
@@ -105,5 +105,13 @@
       "yarn lint  (turbo lint)",
       "yarn type-check  (turbo run type-check; CI uses yarn type-check:ci)"
     ]
-  }
+  },
+  "design_need": {
+    "summary": "This is a new read-only Settings screen, so it needs design before the plan. Brief written for the Designer covering the list rows and the empty state.",
+    "needed": true,
+    "confidence": 0.95,
+    "design_brief": "Design a new read-only Settings page, \"Booking reminders\", under My Account in Settings, placed next to Push notifications in the settings navigation.\n\nPurpose: users see the reminder emails scheduled for their upcoming bookings.\n\nContent rules (already decided, do not reopen):\n- Only upcoming, ACCEPTED bookings where the user is the host. PENDING is excluded.\n- Each row shows: booking title, attendee, and reminder send time.\n- Send time is the booking start minus 24 hours.\n- Read-only: no edit, delete, create or toggle actions.\n- No loading skeleton state. The page renders with data on first paint.\n\nNeeded from the Designer:\n1. Page layout: title and description header consistent with other My Account settings pages (e.g. push notifications, out of office). Use existing @calcom/ui components and tokens.\n2. List or table layout for rows: booking title, attendee, send time. Specify column or field order, how multiple attendees are shown (e.g. first name plus \"+N\", or a list), and how long titles truncate.\n3. Date and time formatting: send time in the user's timezone and locale, with date and time shown clearly. Say whether the booking start is also shown as secondary context (optional).\n4. Empty state: use the existing EmptyScreen pattern, with icon, headline and short explanatory text. No call to action, since the page is read-only.\n5. Responsive behavior for mobile and desktop widths, and the accessibility basics: semantic table or list, headings, contrast.\n6. Copy: proposed English strings for the nav label, page title, page description, column labels and empty state, in snake_case key form for common.json.\n\nOut of scope: a loading skeleton, filtering, pagination decisions beyond a sensible default (note one if the list could be long), and any scheduler or settings controls.",
+    "effective_needed": true
+  },
+  "design_required": true
 }
