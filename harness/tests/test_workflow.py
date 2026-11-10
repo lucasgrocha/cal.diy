@@ -40,7 +40,7 @@ class FakeGitHub:
 
     def issue(self, number, clarification_ids=()):
         return {"number": number, "title": "Duration", "body": self.body + "".join(f"\n{i}" for i in clarification_ids),
-                "labels": [{"name": "priorizado"}], "state": "open"}
+                "labels": [{"name": "prioritized"}], "state": "open"}
 
     def can_write(self, login):
         return login == OWNER
@@ -81,25 +81,25 @@ class FakeGitHub:
 
 def result(stage, **overrides):
     defaults = {
-        "pm": {"summary": "Mostrar duração.", "scope_type": "ui_change", "complexity": "simple",
-               "requires_plan_approval": False, "acceptance_criteria": ["Mostra 30m"], "questions": []},
-        "research": {"summary": "Duration.tsx renderiza.", "kind": "feature", "relevant_files": ["apps/web/x.tsx"],
+        "pm": {"summary": "Show duration.", "scope_type": "ui_change", "complexity": "simple",
+               "requires_plan_approval": False, "acceptance_criteria": ["Shows 30m"], "questions": []},
+        "research": {"summary": "Duration.tsx renders it.", "kind": "feature", "relevant_files": ["apps/web/x.tsx"],
                      "patterns": [], "test_commands": ["TZ=UTC yarn vitest run apps/web/x.test.tsx"]},
-        "design_need": {"summary": "Sem design.", "needed": False, "confidence": 0.95, "design_brief": ""},
-        "design": {"summary": "Três opções.", "recommended_option": 2,
+        "design_need": {"summary": "No design.", "needed": False, "confidence": 0.95, "design_brief": ""},
+        "design": {"summary": "Three options.", "recommended_option": 2,
                    "options": [{"id": i, "title": f"T{i}", "summary": "s", "mockup": "[ ]"} for i in (1, 2, 3)]},
-        "plan": {"summary": "Alterar x.tsx.", "files": ["apps/web/x.tsx"],
-                 "tests": [{"path": "apps/web/x.test.tsx", "kind": "new_test", "purpose": "cobre"}],
-                 "acceptance_criteria": ["Mostra 30m"], "steps": ["editar"], "risk": "low", "open_questions": []},
-        "evaluate": {"summary": "Alinhado.", "aligned": True, "score": 0.9, "risk": "low", "requires_human": False,
+        "plan": {"summary": "Change x.tsx.", "files": ["apps/web/x.tsx"],
+                 "tests": [{"path": "apps/web/x.test.tsx", "kind": "new_test", "purpose": "covers"}],
+                 "acceptance_criteria": ["Shows 30m"], "steps": ["edit"], "risk": "low", "open_questions": []},
+        "evaluate": {"summary": "Aligned.", "aligned": True, "score": 0.9, "risk": "low", "requires_human": False,
                      "missing_acceptance_criteria": [], "findings": []},
-        "implement": {"summary": "Feito.", "files": ["apps/web/x.tsx"], "verification": ["vitest ok"]},
-        "test": {"summary": "Critérios cobertos.", "passed": True, "coverage": [], "findings": []},
+        "implement": {"summary": "Done.", "files": ["apps/web/x.tsx"], "verification": ["vitest ok"]},
+        "test": {"summary": "Criteria covered.", "passed": True, "coverage": [], "findings": []},
         "code_evals": {"summary": "Ok.", "complexity": {"level": "low", "reasons": []},
                        "plan_adherence": {"passed": True, "score": 0.95, "findings": []},
                        "style": {"passed": True, "findings": []}, "human_review": {"required": False, "reasons": []}},
-        "review": {"summary": "Aprovado.", "aligned": True, "score": 0.9, "risk": "low", "findings": []},
-        "deploy": {"summary": "CI do main verde.", "passed": True, "findings": []},
+        "review": {"summary": "Approved.", "aligned": True, "score": 0.9, "risk": "low", "findings": []},
+        "deploy": {"summary": "Main CI is green.", "passed": True, "findings": []},
     }
     defaults["repair"] = defaults["implement"]
     return {**defaults[stage], **overrides}
@@ -158,7 +158,7 @@ def env(monkeypatch):
 
 def start(workflow):
     event = {"repository": {"full_name": CONFIG["repository"]}, "sender": {"login": OWNER},
-             "issue": {"number": 7}, "action": "labeled", "label": {"name": "priorizado"}}
+             "issue": {"number": 7}, "action": "labeled", "label": {"name": "prioritized"}}
     return workflow.init("issues", event)["next"]
 
 
@@ -198,22 +198,22 @@ def test_new_screen_needs_design_choice_and_plan_approval(env):
     script.results["pm"] = [result("pm", scope_type="screen")]
     assert drive(workflow, start(workflow))[-1] == "design"
     assert gh.state["status"] == "awaiting_design_selection"
-    assert "/opcao" in gh.comments[-1][1] and "Opção 2: T2" in gh.comments[-1][1]
-    assert drive(workflow, say(workflow, "/opcao 2")) == ["plan"]
+    assert "/option" in gh.comments[-1][1] and "Option 2: T2" in gh.comments[-1][1]
+    assert drive(workflow, say(workflow, "/option 2")) == ["plan"]
     assert gh.state["status"] == "awaiting_approval" and gh.state["selected_design"]["id"] == 2
     with pytest.raises(GateError):
-        say(workflow, "/aprovar plano 0000000")
-    assert say(workflow, "Parece bom") == ""  # free text doesn't approve
-    assert say(workflow, f"/aprovar plano {gh.state['plan_fingerprint'][:12]}", actor="stranger") == ""
-    assert say(workflow, f"/aprovar plano {gh.state['plan_fingerprint'][:12]}") == "implement"
+        say(workflow, "/approve plan 0000000")
+    assert say(workflow, "Looks good") == ""  # free text does not approve
+    assert say(workflow, f"/approve plan {gh.state['plan_fingerprint'][:12]}", actor="stranger") == ""
+    assert say(workflow, f"/approve plan {gh.state['plan_fingerprint'][:12]}") == "implement"
 
 
 def test_pm_questions_pause_and_the_reply_restarts_planning(env):
     gh, script, _, workflow = env
-    script.results["pm"] = [result("pm", questions=["Web ou embed?"])]
+    script.results["pm"] = [result("pm", questions=["Web or embed?"])]
     assert drive(workflow, start(workflow)) == ["pm"]
-    assert gh.state["status"] == "needs_information" and "1. Web ou embed?" in gh.comments[-1][1]
-    assert say(workflow, "Só web.", comment_id=41) == "pm"
+    assert gh.state["status"] == "needs_information" and "1. Web or embed?" in gh.comments[-1][1]
+    assert say(workflow, "Web only.", comment_id=41) == "pm"
     assert gh.state["clarification_comment_ids"] == [41] and "41" in gh.state["issue"]["body"]
 
 
@@ -238,7 +238,7 @@ def test_ci_failures_stop_at_the_limit_and_approval_cannot_merge(env):
     path = drive(workflow, start(workflow))
     assert path[-1] == "test" and gh.state["status"] == "failed" and not gh.merged
     assert script.calls.count("repair") == CONFIG["max_implementation_attempts"] - 1
-    assert say(workflow, f"/aprovar merge {gh.state['head_sha']}") == ""  # not a merge decision point
+    assert say(workflow, f"/approve merge {gh.state['head_sha']}") == ""  # not a merge decision point
     gh.state["status"] = "ready_to_merge"  # even a forged state cannot merge a failed candidate
     with pytest.raises(GateError):
         workflow.run("merge", 7)
@@ -250,8 +250,8 @@ def test_core_files_need_human_review_of_the_exact_commit(env):
     assert drive(workflow, start(workflow))[-1] == "review_gate"
     assert gh.state["status"] == "awaiting_code_review" and not gh.merged
     with pytest.raises(GateError):
-        say(workflow, "/aprovar merge 1234567")
-    assert drive(workflow, say(workflow, f"/aprovar merge {gh.state['head_sha'][:12]}")) == ["merge", "deploy"]
+        say(workflow, "/approve merge 1234567")
+    assert drive(workflow, say(workflow, f"/approve merge {gh.state['head_sha'][:12]}")) == ["merge", "deploy"]
     assert gh.merged and gh.state["status"] == "done"
 
 
@@ -269,24 +269,24 @@ def test_base_change_makes_the_task_stale(env):
     drive(workflow, start(workflow))
     gh.heads["main"] = "9" * 40
     with pytest.raises(GateError):
-        say(workflow, f"/aprovar plano {gh.state['plan_fingerprint'][:12]}")
+        say(workflow, f"/approve plan {gh.state['plan_fingerprint'][:12]}")
     assert gh.state["status"] == "stale"
-    assert say(workflow, "/retomar") == "pm"
+    assert say(workflow, "/resume") == "pm"
 
 
 def test_handoff_saves_the_pending_decision(env):
     gh, script, _, workflow = env
     script.results["pm"] = [result("pm", requires_plan_approval=True)]
     drive(workflow, start(workflow))
-    assert say(workflow, "/conversar") == ""
-    assert "/aprovar plano" in gh.state["handoff"]["brief"] and gh.state["status"] == "awaiting_approval"
+    assert say(workflow, "/handoff") == ""
+    assert "/approve plan" in gh.state["handoff"]["brief"] and gh.state["status"] == "awaiting_approval"
 
 
 def test_deploy_failure_recommends_revert(env):
     gh, script, _, workflow = env
-    script.results["deploy"] = [result("deploy", passed=False, findings=["CI do main falhou"])]
+    script.results["deploy"] = [result("deploy", passed=False, findings=["Main CI failed"])]
     drive(workflow, start(workflow))
-    assert gh.state["status"] == "deploy_failed" and "reverter" in gh.comments[-1][1]
+    assert gh.state["status"] == "deploy_failed" and "reverting" in gh.comments[-1][1]
 
 
 def test_scope_and_commands():
@@ -295,10 +295,10 @@ def test_scope_and_commands():
     for path in (".github/workflows/x.yml", "harness/policy.py", "apps/web/package.json", "../x.ts", "packages/prisma/schema.prisma"):
         with pytest.raises(GateError):
             safe_path(path, config)
-    assert parse("/aprovar plano abcdef1234") == ("approve_plan", "abcdef1234")
-    assert parse("/opção 3") == ("select_design", "3")
-    assert parse("/ajustar usar um badge")[0] == "revise"
-    assert parse("aprovo")[0] == "reply"
+    assert parse("/approve plan abcdef1234") == ("approve_plan", "abcdef1234")
+    assert parse("/option 3") == ("select_design", "3")
+    assert parse("/revise use a badge")[0] == "revise"
+    assert parse("approve")[0] == "reply"
 
 
 def test_agent_definitions_restrict_tools():

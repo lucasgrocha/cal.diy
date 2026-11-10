@@ -1,23 +1,23 @@
 ##########################################################################################
-# Issue harness: an issue labeled `priorizado` goes through PM, Planner, Designer,       #
+# Issue harness: an issue labeled `prioritized` goes through PM, Planner, Designer,       #
 # Implementer, Tester, Reviewer and Deployer up to the merge (harness/workflow.py).      #
 #----------------------------------------------------------------------------------------#
 # Each job runs one step. The task state lives in runs/<issue>.json on the               #
 # `harness-state` branch; each step checks it is in the state it expects, runs its       #
 # agent, checks the result against the gates in harness/policy.py and outputs `next`,    #
 # the job that runs after it. Human decisions are issue commands (harness/responses.py): #
-#   /opcao N · /aprovar plano <fp> · /ajustar <texto> · /aprovar merge <sha>             #
-#   /conversar (handoff to an interactive session) · /retomar                            #
+#   /option N · /approve plan <fp> · /revise <text> · /approve merge <sha>              #
+#   /handoff (to an interactive session) · /resume                                      #
 #                                                                                        #
-# Issue ─► PM ─► Planner research ─► design? ─sim─► Designer ─► /opcao N ─┐              #
-#                                       └─não───────────────────────────► Plano + eval   #
-# Plano ─► aprovação? ─sim─► /aprovar plano ─┐                                           #
-#             └─não───────────────────────────► Implementer ─► CI e Tester (repara       #
-#   até o limite) ─► Reviewer ‖ evals do código ─► review humano? ─sim─► /aprovar merge  #
-#             └─não──────────────────────────────────────────────► merge ─► Deployer     #
+# Issue ─► PM ─► Planner research ─► design? ─yes─► Designer ─► /option N ─┐              #
+#                                       └─no────────────────────────────► Plan + eval    #
+# Plan ─► approval? ─yes─► /approve plan ─┐                                              #
+#             └─no────────────────────────────► Implementer ─► CI and Tester (repairs  #
+#   up to the limit) ─► Reviewer ‖ code evals ─► human review? ─yes─► /approve merge     #
+#             └─no───────────────────────────────────────────────► merge ─► Deployer     #
 #                                                                                        #
 # Only the repository owner can start or steer it. Setup: CLAUDE_CODE_OAUTH_TOKEN        #
-# secret, the `priorizado` label, and "Allow GitHub Actions to create and approve pull   #
+# secret, the `prioritized` label, and "Allow GitHub Actions to create and approve pull   #
 # requests". Deploy (Railway) isn't configured: the Deployer checks main's CI on the     #
 # merge commit.                                                                          #
 ##########################################################################################
@@ -50,14 +50,14 @@ concurrency:
 
 jobs:
   entry:
-    name: Entrada da issue
+    name: Issue entry
     # Runs only for the repository owner, even on a public repo.
     if: >-
       github.actor == github.repository_owner && (
       github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'issues' && contains(github.event.issue.labels.*.name, 'priorizado')) ||
+      (github.event_name == 'issues' && contains(github.event.issue.labels.*.name, 'prioritized')) ||
       (github.event_name == 'issue_comment' && !github.event.issue.pull_request &&
-       github.event.comment.user.type == 'User' && contains(github.event.issue.labels.*.name, 'priorizado')))
+       github.event.comment.user.type == 'User' && contains(github.event.issue.labels.*.name, 'prioritized')))
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
@@ -75,7 +75,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
 
   pm:
-    name: 🤖 PM / encaminhamento
+    name: 🤖 PM / triage
     needs: [entry]
     if: ${{ !cancelled() && contains(needs.*.outputs.next, 'pm') }}
     runs-on: ubuntu-latest
@@ -96,7 +96,7 @@ jobs:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
   research:
-    name: 🤖 Planner / pesquisa ou investigação
+    name: 🤖 Planner / research or investigation
     needs: [entry, pm]
     if: ${{ !cancelled() && contains(needs.*.outputs.next, 'research') }}
     runs-on: ubuntu-latest
@@ -117,7 +117,7 @@ jobs:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
   design_need:
-    name: 🤖 PM / precisa de design?
+    name: 🤖 PM / needs design?
     needs: [entry, pm, research]
     if: ${{ !cancelled() && contains(needs.*.outputs.next, 'design_need') }}
     runs-on: ubuntu-latest
@@ -138,7 +138,7 @@ jobs:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
   design:
-    name: 🤖 Designer / três opções
+    name: 🤖 Designer / three options
     needs: [entry, design_need]
     if: ${{ !cancelled() && contains(needs.*.outputs.next, 'design') }}
     runs-on: ubuntu-latest
@@ -159,7 +159,7 @@ jobs:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
   plan:
-    name: 🤖 Planner / plano e eval de aderência
+    name: 🤖 Planner / plan and adherence eval
     needs: [entry, pm, research, design_need, design]
     if: ${{ !cancelled() && contains(needs.*.outputs.next, 'plan') }}
     runs-on: ubuntu-latest
@@ -202,7 +202,7 @@ jobs:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
   test:
-    name: 🤖 Tester / CI e critérios
+    name: 🤖 Tester / CI and criteria
     needs: [entry, implement]
     if: ${{ !cancelled() && contains(needs.*.outputs.next, 'test') }}
     runs-on: ubuntu-latest
@@ -224,7 +224,7 @@ jobs:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
   code_evals:
-    name: 🤖 Reviewer / evals do código
+    name: 🤖 Reviewer / code evals
     needs: [entry, test]
     if: ${{ !cancelled() && contains(needs.*.outputs.next, 'review') }}
     runs-on: ubuntu-latest
@@ -245,7 +245,7 @@ jobs:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
   review:
-    name: 🤖 Reviewer / revisão independente
+    name: 🤖 Reviewer / independent review
     needs: [entry, test]
     if: ${{ !cancelled() && contains(needs.*.outputs.next, 'review') }}
     runs-on: ubuntu-latest
@@ -266,7 +266,7 @@ jobs:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
   review_gate:
-    name: 🤖 Reviewer / gate de review
+    name: 🤖 Reviewer / review gate
     needs: [entry, code_evals, review]
     if: ${{ !cancelled() && needs.code_evals.outputs.next == 'review_gate' && needs.review.outputs.next == 'review_gate' }}
     runs-on: ubuntu-latest
@@ -286,7 +286,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
 
   merge:
-    name: Gate de merge
+    name: Merge gate
     needs: [entry, review_gate]
     if: ${{ !cancelled() && contains(needs.*.outputs.next, 'merge') }}
     runs-on: ubuntu-latest
@@ -306,7 +306,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
 
   deploy:
-    name: 🤖 Deployer / versão integrada
+    name: 🤖 Deployer / merged version
     needs: [entry, merge]
     if: ${{ !cancelled() && contains(needs.*.outputs.next, 'deploy') }}
     runs-on: ubuntu-latest

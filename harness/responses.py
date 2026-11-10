@@ -6,12 +6,12 @@ import re
 from harness.policy import GateError
 
 COMMANDS = [
-    ("approve_plan", re.compile(r"^/aprovar\s+plano\s+([0-9a-f]{7,64})\b", re.I)),
-    ("approve_merge", re.compile(r"^/aprovar\s+merge\s+([0-9a-f]{7,40})\b", re.I)),
-    ("select_design", re.compile(r"^/op[cç][aã]o\s+([1-3])\b", re.I)),
-    ("revise", re.compile(r"^/ajustar\s+(\S.*)", re.I | re.S)),
-    ("handoff", re.compile(r"^/conversar\b", re.I)),
-    ("resume", re.compile(r"^/retomar\b", re.I)),
+    ("approve_plan", re.compile(r"^/approve\s+plan\s+([0-9a-f]{7,64})\b", re.I)),
+    ("approve_merge", re.compile(r"^/approve\s+merge\s+([0-9a-f]{7,40})\b", re.I)),
+    ("select_design", re.compile(r"^/option\s+([1-3])\b", re.I)),
+    ("revise", re.compile(r"^/revise\s+(\S.*)", re.I | re.S)),
+    ("handoff", re.compile(r"^/handoff\b", re.I)),
+    ("resume", re.compile(r"^/resume\b", re.I)),
 ]
 # Where each decision is accepted.
 ACCEPTED = {
@@ -45,7 +45,7 @@ def resolve(state, body):
     if not state or state["status"] not in ACCEPTED[action]:
         return None
     if action == "approve_plan" and not matches(argument, state.get("plan_fingerprint")):
-        raise GateError("A aprovação não corresponde ao plano pendente.")
+        raise GateError("The approval does not match the pending plan.")
     if action == "approve_merge" and not matches(argument, state.get("head_sha")):
-        raise GateError("A aprovação não corresponde ao commit avaliado.")
+        raise GateError("The approval does not match the evaluated commit.")
     return action, argument

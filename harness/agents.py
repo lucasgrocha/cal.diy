@@ -18,13 +18,13 @@ class Agent:
 
 
 AGENTS = {
-    "pm": Agent("pm", "🤖 PM", "pm", "Coordenar a entrega, esclarecer decisões e delegar; os gates permanecem no controlador."),
-    "design": Agent("design", "🤖 Designer", "designer", "Criar alternativas de mockup para seleção humana e orientar a implementação."),
-    "planning": Agent("planning", "🤖 Planner", "planner", "Pesquisar, planejar e avaliar o plano; não implementar."),
-    "implementation": Agent("implementation", "🤖 Implementer", "implementer", "Implementar ou corrigir somente o plano aprovado; não revisar nem integrar."),
-    "test": Agent("test", "🤖 Tester", "tester", "Analisar critérios, cobertura e evidências reais da CI do commit; não fabricar resultados."),
-    "review": Agent("review", "🤖 Reviewer", "reviewer", "Revisar independentemente o diff, o plano e as evidências do commit; não alterar arquivos."),
-    "deploy": Agent("deploy", "🤖 Deployer", "deployer", "Verificar as evidências reais da versão integrada; o controlador mantém credenciais e merge."),
+    "pm": Agent("pm", "🤖 PM", "pm", "Coordinate delivery, clarify decisions and delegate; the gates stay in the controller."),
+    "design": Agent("design", "🤖 Designer", "designer", "Create mockup alternatives for a human to choose from and guide the implementation."),
+    "planning": Agent("planning", "🤖 Planner", "planner", "Research, plan and evaluate the plan; never implement."),
+    "implementation": Agent("implementation", "🤖 Implementer", "implementer", "Implement or fix only the approved plan; never review or merge."),
+    "test": Agent("test", "🤖 Tester", "tester", "Check criteria, coverage and the real CI evidence of the commit; never fabricate results."),
+    "review": Agent("review", "🤖 Reviewer", "reviewer", "Independently review the diff, the plan and the commit's evidence; never change files."),
+    "deploy": Agent("deploy", "🤖 Deployer", "deployer", "Verify the real evidence of the merged version; the controller keeps credentials and the merge."),
 }
 STAGE_ROLES = {
     "pm": "pm", "design_need": "pm", "design": "design",
@@ -44,9 +44,9 @@ def trusted_context(stage):
     """Role identity comes from trusted routing, never from issue/model input."""
     agent = agent_for_stage(stage)
     return {"role": agent.role, "name": agent.name, "responsibility": agent.responsibility, "stage": stage,
-            "communication": "Escreva em português. `summary` tem uma ou duas frases, até 35 palavras, com a decisão e o "
-                             "próximo passo. Perguntas curtas, uma decisão por pergunta. Sem JSON, logs ou hashes no resumo; "
-                             "os detalhes ficam nos campos estruturados."}
+            "communication": "Write in English. `summary` is one or two sentences, at most 35 words, with the decision and the "
+                             "next step. Short questions, one decision per question. No JSON, logs or hashes in the summary; "
+                             "details go in the structured fields."}
 
 
 def _bounded(text, limit):

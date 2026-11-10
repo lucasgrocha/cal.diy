@@ -53,8 +53,8 @@ class Controller:
         if (self.gh.head(self.config["base_branch"]) != self.state["base_sha"]
                 or digest(issue_snapshot(self.current_issue())) != self.state["issue_digest"]):
             self.save("stale")
-            self.comment("planning", "A issue ou o main mudaram depois do planejamento.",
-                         decision="Comente `/retomar` para replanejar sobre a versão atual.")
+            self.comment("planning", "The issue or main changed after planning.",
+                         decision="Comment `/resume` to replan on the current version.")
             raise GateError("Issue or base changed; plan again")
 
     def comment(self, role, summary, *, decision=None, questions=None, details=None, pr=False):
@@ -78,4 +78,4 @@ class Controller:
         """Full evaluation details go to the PR; the issue only gets the short report."""
         details = "```json\n" + json.dumps(data, ensure_ascii=False, indent=2)[:60_000] + "\n```"
         role = agent_for_stage(title).role
-        self.comment(role, f"Avaliação {title} do commit {self.state['head_sha'][:7]}.", details=details, pr=True)
+        self.comment(role, f"Evaluation {title} of commit {self.state['head_sha'][:7]}.", details=details, pr=True)

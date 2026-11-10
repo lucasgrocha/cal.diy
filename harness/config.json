@@ -1,7 +1,7 @@
 {
   "repository": "lucasgrocha/cal.diy",
   "base_branch": "main",
-  "label": "priorizado",
+  "label": "prioritized",
   "model": "opus",
   "reasoning_effort": "high",
   "agent_max_turns": 60,

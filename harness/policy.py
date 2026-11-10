@@ -147,28 +147,28 @@ def code_review_gate(files, code_evals, review, head_sha, config):
     fixed = deterministic_review(files, config)
     reasons = []
     if fixed["migration_files"]:
-        reasons.append("Migrações alteradas exigem review humano.")
+        reasons.append("Changed migrations require human review.")
     if fixed["core_files"]:
-        reasons.append("Arquivos core alterados exigem review humano.")
+        reasons.append("Changed core files require human review.")
     if not code_evals or code_evals["head_sha"] != head_sha:
         raise GateError("Code evals must identify the evaluated commit")
     if code_evals["complexity"]["level"] in config["human_review_complexity_levels"]:
-        reasons.append("A complexidade da mudança exige review humano.")
+        reasons.append("The change's complexity requires human review.")
     adherence = code_evals["plan_adherence"]
     if not adherence["passed"] or adherence["score"] < config["review_min_score"] or adherence["findings"]:
-        reasons.append("O eval encontrou divergências em relação ao plano.")
+        reasons.append("The eval found deviations from the plan.")
     if not code_evals["style"]["passed"] or code_evals["style"]["findings"]:
-        reasons.append("O eval encontrou divergências nas regras de estilo.")
+        reasons.append("The eval found style violations.")
     if code_evals["human_review"]["required"]:
-        reasons.extend(code_evals["human_review"]["reasons"] or ["O eval recomenda review humano."])
+        reasons.extend(code_evals["human_review"]["reasons"] or ["The eval recommends human review."])
     if not review or review["head_sha"] != head_sha:
         raise GateError("The review must identify the evaluated commit")
     if not review_passes(review, head_sha, config):
         if review["findings"]:
-            reasons.append("O Reviewer encontrou pontos que exigem revisão humana.")
+            reasons.append("The Reviewer found points that need human review.")
         elif review["aligned"] and review["score"] >= config["review_min_score"]:
-            reasons.append("A revisão não encontrou problemas. O risco exige aprovação humana.")
+            reasons.append("The review found no problems, but the risk requires human approval.")
         else:
-            reasons.append("O Reviewer não confirmou alinhamento suficiente com o pedido.")
+            reasons.append("The Reviewer did not confirm enough alignment with the request.")
     return {"head_sha": head_sha, "requires_human": bool(reasons), "reasons": list(dict.fromkeys(reasons)),
             "deterministic_checks": fixed}

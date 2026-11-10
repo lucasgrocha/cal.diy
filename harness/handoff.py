@@ -14,31 +14,31 @@ from pathlib import Path
 from harness.responses import ACCEPTED
 
 DECISIONS = {
-    "needs_information": "Responda às perguntas na issue.",
-    "awaiting_design_selection": "Comente `/opcao <1-3>` ou `/ajustar <mudanças>`.",
-    "awaiting_approval": "Comente `/aprovar plano <fingerprint>` ou `/ajustar <mudanças>`.",
-    "awaiting_code_review": "Comente `/aprovar merge <sha>` ou peça ajustes.",
-    "manual_change_required": "Comente `/ajustar <mudanças>` para replanejar dentro do escopo permitido.",
-    "failed": "Corrija a causa e comente `/retomar`.",
-    "stale": "Comente `/retomar` para replanejar sobre a versão atual.",
-    "deploy_failed": "Decida se reverte o merge.",
+    "needs_information": "Answer the questions in the issue.",
+    "awaiting_design_selection": "Comment `/option <1-3>` or `/revise <changes>`.",
+    "awaiting_approval": "Comment `/approve plan <fingerprint>` or `/revise <changes>`.",
+    "awaiting_code_review": "Comment `/approve merge <sha>` or ask for changes.",
+    "manual_change_required": "Comment `/revise <changes>` to replan within the allowed scope.",
+    "failed": "Fix the cause and comment `/resume`.",
+    "stale": "Comment `/resume` to replan on the current version.",
+    "deploy_failed": "Decide whether to revert the merge.",
 }
 
 
 def brief(number, state):
     status = state["status"]
-    pending = DECISIONS.get(status, "Nenhuma decisão pendente.")
+    pending = DECISIONS.get(status, "No pending decision.")
     evidence = {k: state[k] for k in ("pm", "research", "design_need", "evaluation", "check_evidence", "test_review",
                                       "code_evals", "review", "code_gate", "error") if state.get(k)}
     plan = state.get("plan") or {}
     return "\n".join([
-        f"# Handoff da issue #{number}: {state['issue']['title']}",
-        "", "## Objetivo", "", state["issue"]["body"] or "(sem descrição)",
-        "", "## Plano atual", "", json.dumps(plan, ensure_ascii=False, indent=2) if plan else "(ainda sem plano)",
-        "", "## Evidências", "", "```json", json.dumps(evidence, ensure_ascii=False, indent=2), "```",
-        "", f"## Decisão pendente (estado `{status}`)", "", pending,
-        "", "Depois da conversa, registre a decisão na issue com o comando acima; o workflow reavalia os gates ao retomar.",
-        f"Comandos aceitos agora: {', '.join(sorted(a for a, states in ACCEPTED.items() if status in states))}.",
+        f"# Issue handoff #{number}: {state['issue']['title']}",
+        "", "## Goal", "", state["issue"]["body"] or "(no description)",
+        "", "## Current plan", "", json.dumps(plan, ensure_ascii=False, indent=2) if plan else "(no plan yet)",
+        "", "## Evidence", "", "```json", json.dumps(evidence, ensure_ascii=False, indent=2), "```",
+        "", f"## Pending decision (state `{status}`)", "", pending,
+        "", "After the discussion, record the decision in the issue with the command above; the workflow rechecks the gates when it resumes.",
+        f"Commands accepted now: {', '.join(sorted(a for a, states in ACCEPTED.items() if status in states))}.",
     ])
 
 

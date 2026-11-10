@@ -59,7 +59,7 @@ class GitHub:
             raise GateError("A pull request cannot trigger an issue workflow")
         if issue["state"] != "open":
             raise GateError("Issue is closed")
-        clarifications = [f"Detalhamento de @{c['user']['login']} (comentário {c['id']}):\n{c['body']}"
+        clarifications = [f"Details from @{c['user']['login']} (comment {c['id']}):\n{c['body']}"
                           for c in self.all(f"issues/{number}/comments")
                           if c["id"] in clarification_ids and c["user"].get("type") == "User"
                           and self.can_write(c["user"]["login"])]
@@ -102,7 +102,7 @@ class GitHub:
             if exc.code != 404:
                 raise
             # An orphan branch: state never shares history with the application.
-            readme = "# harness-state\n\nEstado, orçamento e evidências do harness. Não integrar.\n"
+            readme = "# harness-state\n\nHarness state, budget and evidence. Do not merge.\n"
             tree = self.repo_api("POST", "git/trees", {"tree": [{"path": "README.md", "mode": "100644", "type": "blob", "content": readme}]})
             commit = self.repo_api("POST", "git/commits", {"message": "harness: state branch", "tree": tree["sha"], "parents": []})
             self.repo_api("POST", "git/refs", {"ref": f"refs/heads/{STATE_BRANCH}", "sha": commit["sha"]})

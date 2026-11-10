@@ -74,8 +74,8 @@ class Workflow:
             return self.start(actor)
         if name == "handoff":
             c.save(handoff={"actor": actor, "comment_id": comment_id, "at": int(time.time()), "brief": brief(number, c.state)})
-            c.comment("pm", "Contexto salvo para a conversa.",
-                      decision=f"Rode `python -m harness.handoff {number} | claude` e registre a decisão aqui.")
+            c.comment("pm", "Context saved for the discussion.",
+                      decision=f"Run `python -m harness.handoff {number} | claude` and record the decision here.")
             return {"next": ""}
         if name == "resume":
             fresh = (c.gh.head(c.config["base_branch"]) == c.state["base_sha"]
@@ -93,7 +93,7 @@ class Workflow:
         if name == "select_design":
             option = next(o for o in c.state["design"]["options"] if o["id"] == int(argument))
             c.save("plan", selected_design={**option, "actor": actor, "comment_id": comment_id})
-            c.comment("pm", f"Opção {option['id']} escolhida. Vou preparar o plano com esse design.")
+            c.comment("pm", f"Option {option['id']} chosen. I will prepare the plan with that design.")
             return {"next": "plan"}
         if name == "revise":
             feedback = c.state.get("owner_feedback", []) + [{"actor": actor, "comment_id": comment_id, "text": argument}]
@@ -114,7 +114,7 @@ class Workflow:
                    "started_by": actor, "stages": [],
                    "clarification_comment_ids": (c.state or {}).get("clarification_comment_ids", [])}
         c.save()
-        c.comment("pm", "Recebi o pedido. Vou definir o caminho da entrega.")
+        c.comment("pm", "Request received. I will define the delivery path.")
         return {"next": "pm"}
 
     # ── steps ───────────────────────────────────────────────────────────────────────────
@@ -135,7 +135,7 @@ class Workflow:
             result = c.stage(agent, "pm", {"issue": c.state["issue"]})
         if result["questions"]:
             c.save("needs_information", pm=result)
-            c.comment("pm", result["summary"], questions=result["questions"], decision="Responda aqui para continuar.")
+            c.comment("pm", result["summary"], questions=result["questions"], decision="Reply here to continue.")
             return {"next": ""}
         c.save("research", pm=result)
         c.comment("pm", result["summary"])
@@ -146,7 +146,7 @@ class Workflow:
         with c.runner(c.config, c.state["base_sha"]) as agent:
             result = c.stage(agent, "research", {"issue": c.state["issue"], "pm": c.state["pm"]})
         c.save("design_need", research=result)
-        c.comment("planning", ("Investigação" if result["kind"] == "bug" else "Pesquisa") + " concluída. " + result["summary"])
+        c.comment("planning", ("Investigation" if result["kind"] == "bug" else "Research") + " done. " + result["summary"])
         return {"next": "design_need"}
 
     def step_design_need(self):
@@ -156,7 +156,7 @@ class Workflow:
         # A new screen cannot silently skip design, even if the eval is mistaken.
         needed = result["needed"] or result["confidence"] < c.config["design_min_confidence"] or c.state["pm"]["scope_type"] == "screen"
         c.save("design" if needed else "plan", design_need={**result, "effective_needed": needed}, design_required=needed)
-        c.comment("pm", "Vou pedir três opções ao Designer." if needed else "A mudança aproveita a interface existente. Vou seguir para o plano.")
+        c.comment("pm", "I will ask the Designer for three options." if needed else "The change reuses the existing interface. Moving on to the plan.")
         return {"next": "design" if needed else "plan"}
 
     def step_design(self):
@@ -168,10 +168,10 @@ class Workflow:
         if sorted(o["id"] for o in result["options"]) != [1, 2, 3]:
             raise GateError("The Designer must return options 1, 2 and 3")
         c.save("awaiting_design_selection", design=result, selected_design=None)
-        mockups = "\n\n".join(f"**Opção {o['id']}: {o['title']}**\n\n{o['summary']}\n\n```text\n{o['mockup']}\n```"
+        mockups = "\n\n".join(f"**Option {o['id']}: {o['title']}**\n\n{o['summary']}\n\n```text\n{o['mockup']}\n```"
                               for o in result["options"])
-        c.comment("design", f"{result['summary']} Recomendo a opção {result['recommended_option']}.",
-                  decision="Comente `/opcao <1-3>` ou `/ajustar <mudanças>`.", details=mockups)
+        c.comment("design", f"{result['summary']} I recommend option {result['recommended_option']}.",
+                  decision="Comment `/option <1-3>` or `/revise <changes>`.", details=mockups)
         return {"next": ""}
 
     def step_plan(self):
@@ -187,7 +187,7 @@ class Workflow:
                 if plan["open_questions"] or (evaluation["aligned"] and evaluation["score"] >= c.config["plan_min_score"]
                                               and not evaluation["missing_acceptance_criteria"]):
                     break
-                c.comment("planning", "O eval encontrou uma divergência no plano. Vou pedir a correção ao Planner.")
+                c.comment("planning", "The eval found a deviation in the plan. Asking the Planner to fix it.")
                 plan = complete_plan_files(c.stage(agent, "plan", {**context, "previous_plan": plan, "evaluation_feedback": evaluation}))
                 evaluation = c.stage(agent, "evaluate", {**context, "plan": plan})
         fingerprint = plan_fingerprint(c.state["issue"], c.state["base_sha"], plan, evaluation)
@@ -195,22 +195,22 @@ class Workflow:
             target = route_plan(plan, evaluation, c.state["pm"], c.config)
         except GateError as error:
             c.save("manual_change_required", plan=plan, evaluation=evaluation, plan_fingerprint=fingerprint, scope_error=str(error))
-            c.comment("planning", "O plano sai do escopo que o harness pode alterar.", details=str(error),
-                      decision="Comente `/ajustar <mudanças>` ou faça a mudança numa PR separada.")
+            c.comment("planning", "The plan is outside the scope the harness may change.", details=str(error),
+                      decision="Comment `/revise <changes>` or make the change in a separate PR.")
             return {"next": ""}
         c.save(target, plan=plan, evaluation=evaluation, plan_fingerprint=fingerprint)
-        details = "\n".join([f"- Arquivos: {', '.join(plan['files'])}", "- Critérios:",
-                             *[f"  - {x}" for x in plan["acceptance_criteria"]], "- Passos:", *[f"  - {x}" for x in plan["steps"]],
-                             f"- Risco: {plan['risk']} · eval: {evaluation['score']:.2f}"])
+        details = "\n".join([f"- Files: {', '.join(plan['files'])}", "- Criteria:",
+                             *[f"  - {x}" for x in plan["acceptance_criteria"]], "- Steps:", *[f"  - {x}" for x in plan["steps"]],
+                             f"- Risk: {plan['risk']} · eval: {evaluation['score']:.2f}"])
         if target == "needs_information":
             questions = plan["open_questions"] or evaluation["missing_acceptance_criteria"] or evaluation["findings"]
-            c.comment("planning", plan["summary"], questions=questions, decision="Responda aqui para continuar.")
+            c.comment("planning", plan["summary"], questions=questions, decision="Reply here to continue.")
             return {"next": ""}
         if target == "awaiting_approval":
             c.comment("planning", plan["summary"], details=details,
-                      decision=f"Comente `/aprovar plano {fingerprint[:12]}` ou `/ajustar <mudanças>`.")
+                      decision=f"Comment `/approve plan {fingerprint[:12]}` or `/revise <changes>`.")
             return {"next": ""}
-        c.comment("planning", plan["summary"] + " Mudança simples; sigo sem pausa.", details=details)
+        c.comment("planning", plan["summary"] + " Simple change; continuing without a pause.", details=details)
         return {"next": "implement"}
 
     def step_implement(self):
@@ -223,12 +223,12 @@ class Workflow:
         validate_plan_scope(files, c.state["plan"])
         branch = f"harness/issue-{c.number}"
         head = c.gh.publish_patch(c.number, c.state["base_sha"], files, branch=branch)
-        body = (f"{result['summary']}\n\nCloses #{c.number}\n\nCI, 🤖 Tester e review são exigidos antes do merge. "
-                f"Decisões humanas na issue #{c.number}." + FOOTER)
+        body = (f"{result['summary']}\n\nCloses #{c.number}\n\nCI, 🤖 Tester and review are required before the merge. "
+                f"Human decisions in issue #{c.number}." + FOOTER)
         pr = c.gh.open_pr(branch, c.config["base_branch"], f"feat: {c.state['issue']['title']}", body)
         c.save("testing", branch=branch, head_sha=head, pr_number=pr["number"], pr_url=pr["html_url"],
                implementation=result, attempts=1)
-        c.comment("implementation", f"Implementação pronta na PR #{pr['number']}. A CI e o Tester vão verificar a mudança.")
+        c.comment("implementation", f"Implementation ready in PR #{pr['number']}. CI and the Tester will verify the change.")
         return {"next": "test"}
 
     def repair(self, failure):
@@ -252,7 +252,7 @@ class Workflow:
             failure = None
             if not evidence["passed"]:
                 failure = {"failed_checks": [x for x in evidence["checks"] if x["exit_code"]]}
-                summary = "A CI encontrou uma falha."
+                summary = "CI found a failure."
             else:
                 with c.runner(c.config, head) as agent:
                     review = c.stage(agent, "test", {"head_sha": head, "issue": c.state["issue"], "pm": c.state["pm"],
@@ -264,14 +264,14 @@ class Workflow:
                     c.save("reviewing")
                     c.comment("test", review["summary"])
                     return {"next": "review"}
-                failure = {"test_findings": review["findings"] or ["O Tester não aprovou os critérios."]}
-                summary = "O Tester encontrou uma lacuna."
+                failure = {"test_findings": review["findings"] or ["The Tester did not approve the criteria."]}
+                summary = "The Tester found a gap."
             if c.state["attempts"] >= c.config["max_implementation_attempts"]:
                 c.save("failed", resume_status="testing", failed_step="test", error=summary)
-                c.comment("test", summary + " O limite de tentativas acabou.",
-                          decision="Aprovação humana não libera testes reprovados. Use `/conversar` ou corrija e comente `/retomar`.")
+                c.comment("test", summary + " The attempt limit was reached.",
+                          decision="Human approval does not release failing tests. Use `/handoff`, or fix it and comment `/resume`.")
                 return {"next": ""}
-            c.comment("test", summary + " O Implementer vai corrigi-la dentro do plano aprovado.")
+            c.comment("test", summary + " The Implementer will fix it within the approved plan.")
             self.repair(failure)
 
     def _review_stage(self, name, field):
@@ -303,10 +303,10 @@ class Workflow:
         if gate["requires_human"]:
             c.save("awaiting_code_review", code_gate=gate)
             c.comment("review", " ".join(gate["reasons"][:2]),
-                      decision=f"Revise a PR #{c.state['pr_number']} e comente `/aprovar merge {head[:12]}` ou `/conversar`.")
+                      decision=f"Review PR #{c.state['pr_number']} and comment `/approve merge {head[:12]}` or `/handoff`.")
             return {"next": ""}
         c.save("ready_to_merge", code_gate=gate)
-        c.comment("review", c.state["review"]["summary"] + " Gate automático aprovado.")
+        c.comment("review", c.state["review"]["summary"] + " Automatic gate passed.")
         return {"next": "merge"}
 
     def step_merge(self):
@@ -330,7 +330,7 @@ class Workflow:
             raise GateError("This commit needs a human approval in the issue")
         merged = c.gh.merge_pr(c.state["pr_number"], head, f"{pr['title']} (#{c.state['pr_number']})")
         c.save("deploying", merge_sha=merged["sha"])
-        c.comment("deploy", f"PR #{c.state['pr_number']} integrada. Vou verificar a versão integrada.")
+        c.comment("deploy", f"PR #{c.state['pr_number']} merged. Verifying the merged version.")
         return {"next": "deploy"}
 
     def step_deploy(self):
@@ -343,11 +343,11 @@ class Workflow:
         c.save(deploy_evidence=evidence, deploy=result)
         if evidence["passed"] and result["merge_sha"] == merge_sha and result["passed"] and not result["findings"]:
             c.save("done")
-            c.comment("deploy", result["summary"] + " Entrega concluída.")
+            c.comment("deploy", result["summary"] + " Delivery complete.")
             return {"next": ""}
         c.save("deploy_failed")
         c.comment("deploy", result["summary"], details="\n".join(f"- {x}" for x in result["findings"]) or None,
-                  decision=f"Recomendo reverter o merge {merge_sha[:12]} (botão Revert na PR #{c.state['pr_number']}).")
+                  decision=f"I recommend reverting merge {merge_sha[:12]} (Revert button on PR #{c.state['pr_number']}).")
         return {"next": ""}
 
 
@@ -370,8 +370,8 @@ def main():
             c.save("failed", resume_status=c.state["status"], failed_step=None if args.step == "entry" else args.step,
                    error=str(error)[:2000])
         if c.number and c.state and c.state["status"] != "stale":  # a stale task was already reported
-            c.comment("pm", "A etapa foi interrompida.", details=str(error)[:2000],
-                      decision="Corrija a causa e comente `/retomar`, ou use `/conversar`." if c.state["status"] == "failed" else None)
+            c.comment("pm", "The step was interrupted.", details=str(error)[:2000],
+                      decision="Fix the cause and comment `/resume`, or use `/handoff`." if c.state["status"] == "failed" else None)
         raise
     result = {"issue": c.number or "", **result}
     if os.getenv("GITHUB_OUTPUT"):
