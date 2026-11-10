@@ -110,7 +110,7 @@
     }
   ],
   "clarification_comment_ids": [],
-  "updated_at": 1794275723,
+  "updated_at": 1794275724,
   "pm": {
     "summary": "Small UI change: give every duration shown on the booking page a localized screen-reader label like \"Duration: 30 minutes\", keep the visible text the same, and add a unit test. Ready for implementation.",
     "scope_type": "ui_change",
@@ -310,5 +310,58 @@
     "passed": true,
     "run_id": 42738350156,
     "run_url": "https://github.com/lucasgrocha/cal.diy/actions/runs/42738350156"
+  },
+  "test_review": {
+    "summary": "Passed: all eight criteria have test coverage, and the test, lint and type-check runs on this commit succeeded. Next step is review, where someone should confirm that a screen reader actually announces the label on the plain span.",
+    "head_sha": "9808f1f189b4065064fad41a49b6117e2097be5b",
+    "passed": true,
+    "coverage": [
+      {
+        "criterion": "Single-duration event exposes accessible name \"Duration: <duration>\" (e.g. \"Duration: 30 minutes\")",
+        "covered": true,
+        "evidence": "Duration.tsx wraps the single-duration path in <span aria-label={getDurationAccessibleLabel(event.length, t)}>. Duration.test.tsx test 1 runs getByLabelText(\"Duration: 30 minutes\"). The CI 'tests' check (exit 0) shows Duration.test.tsx passing 4 tests."
+      },
+      {
+        "criterion": "Multiple-duration event with selector hidden labels the selected/default duration",
+        "covered": true,
+        "evidence": "In the hideDurationSelector branch, the span uses selectedDuration || event.length for both the label and the visible text. Test 2 sets multipleDuration [15,30,90], hides the selector and uses selectedDuration 90. It finds the label \"Duration: 1 hour 30 minutes\" with text \"1h 30m\". CI passed."
+      },
+      {
+        "criterion": "Selector visible: each option has its own label; selected and clickable behavior unchanged",
+        "covered": true,
+        "evidence": "The diff only adds aria-label to the <li>; data-testId, data-active, onClick, ref and classNames are unchanged. Test 3 checks that the 15 option's aria-label is \"Duration: 15 minutes\" and the 90 option's is \"Duration: 1 hour 30 minutes\". It checks data-active false/true on 15 and 30, and that clicking calls setSelectedDuration(15). CI passed. The dynamic-event variant (isDynamic with no multipleDuration) is not tested, but it uses the same code path."
+      },
+      {
+        "criterion": "Durations of 60 minutes or more get an understandable long-form label, not the short form",
+        "covered": true,
+        "evidence": "getDurationAccessibleLabel builds the label from the pluralized t('hour'/'minute', {count}) keys, which exist in en/common.json (hour_one/hour_other, minute_one/minute_other at lines 1806-1811). Tests 2 and 3 check that 90 gives \"Duration: 1 hour 30 minutes\". The plan's 60 and 120 examples are not tested, but they follow from the same logic."
+      },
+      {
+        "criterion": "Visible text unchanged on all paths; no layout or styling changes",
+        "covered": true,
+        "evidence": "Tests use anchored regexes for the visible text: /^30m$/, /^1h 30m$/ and /^15m$/. The new wrapper is a <span> with no className inside EventMetaBlock (Details.tsx:145-147), and the <li> classNames are untouched."
+      },
+      {
+        "criterion": "Label text comes from i18n with a new English key; nothing hardcoded",
+        "covered": true,
+        "evidence": "en/common.json adds \"duration_aria_label\": \"Duration: {{duration}}\" after multiple_duration_timeUnit_short. The component uses only t() keys, and the parts are joined with a single space. Lint (biome, exit 0) passed on the JSON."
+      },
+      {
+        "criterion": "Other getDurationFormatted callers (BookFormAsModal) output unchanged",
+        "covered": true,
+        "evidence": "getDurationFormatted is not modified in the diff; only imports were reordered. BookFormAsModal.tsx:68 still calls it the same way. Test 4 checks that getDurationFormatted(90, t) returns \"1h 30m\" (with a mocked t). Booker.test.tsx also passed in the CI related run."
+      },
+      {
+        "criterion": "Unit test in apps/web renders the component, checks the single and multiple-option labels and the visible text, and passes",
+        "covered": true,
+        "evidence": "apps/web/modules/bookings/components/event-meta/Duration.test.tsx: in the CI run `yarn vitest related --run` on commit 9808f1f, exit_code 0, '✓ Duration.test.tsx (4 tests)', 8 tests passed in 2 files. The web-types type-check also exited 0."
+      }
+    ],
+    "findings": [
+      "Accessibility risk, non-blocking: on the single-duration and hidden-selector paths, aria-label is placed on a <span> with no role. ARIA 1.2 does not allow naming the generic role, so some screen readers (e.g. NVDA in browse mode) may skip the label, and axe flags this as aria-prohibited-attr. The getByLabelText test does not catch this. The reviewer should consider adding role=\"img\" or a visually hidden text plus aria-hidden on the visible text.",
+      "Minor coverage gap: no test covers a dynamic event (isDynamic true, no multipleDuration) with the default [15,30,60,90] options. The plan's 60 → \"1 hour\" and 120 → \"2 hours\" examples are also untested; they share the code path that is tested.",
+      "The i18n test uses a locally mocked t. It checks the template wiring, not the real en/common.json values, although I confirmed by reading the file that the hour/minute plural keys and the new key exist.",
+      "The CI evidence did not run the plan's extra command, `yarn test apps/web/modules/bookings/components/event-meta`, as a separate folder run. The 'related' run covered Duration.test.tsx and Booker.test.tsx."
+    ]
   }
 }
