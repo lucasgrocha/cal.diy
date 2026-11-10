@@ -1,5 +1,5 @@
 {
-  "status": "plan",
+  "status": "implement",
   "issue": {
     "number": 18,
     "title": "Add aria-label to the booking page duration badge",
@@ -72,7 +72,7 @@
     }
   ],
   "clarification_comment_ids": [],
-  "updated_at": 1794272798,
+  "updated_at": 1794272799,
   "pm": {
     "summary": "Small accessibility fix to the booking page duration display: add a localized \"Duration: X minutes\" accessible label and leave the visible text as it is. Ready for implementation with a unit test.",
     "scope_type": "ui_change",
@@ -136,5 +136,66 @@
     "design_brief": "",
     "effective_needed": false
   },
-  "design_required": false
+  "design_required": false,
+  "plan": {
+    "summary": "Plan: add a localized long-form aria-label helper to Duration.tsx, wrap the plain-text branches in a span, label each selector item, add one English key, and add a colocated unit test. Next: implementation.",
+    "files": [
+      "apps/web/modules/bookings/components/event-meta/Duration.tsx",
+      "packages/i18n/locales/en/common.json",
+      "apps/web/modules/bookings/components/event-meta/Duration.test.tsx"
+    ],
+    "tests": [
+      {
+        "path": "apps/web/modules/bookings/components/event-meta/Duration.test.tsx",
+        "kind": "new_test",
+        "purpose": "Render EventDuration with a mocked Booker store. Check aria-labels: single 30 gives \"Duration: 30 minutes\" with visible \"30m\"; 1 gives \"Duration: 1 minute\"; 120 gives \"Duration: 2 hours\"; 90 gives \"Duration: 1 hour 30 minutes\" with visible \"1h 30m\". Cover the hidden-selector case (selectedDuration, or event.length as fallback) and the selector case: each <li> is labeled and keeps data-testid, data-active and the click calling setSelectedDuration. Also check getDurationFormatted output is unchanged."
+      },
+      {
+        "path": "apps/web/modules/bookings/components/Booker.test.tsx",
+        "kind": "existing_test",
+        "purpose": "Regression run for the booker views project, which shares test-setup and the Booker store test-utils (run via `yarn test`)."
+      }
+    ],
+    "acceptance_criteria": [
+      "Single-duration event (no multipleDuration, not dynamic) with length 30 renders an element with aria-label \"Duration: 30 minutes\" whose visible text is still \"30m\".",
+      "When multipleDuration is set and hideDurationSelectorInBookingPage is true, the rendered text element has aria-label for selectedDuration, or event.length when nothing is selected (e.g. \"Duration: 60 minutes\"), and its visible text is unchanged.",
+      "In selector mode, each <li> option has aria-label in the same format (e.g. \"Duration: 15 minutes\") and its visible label (e.g. \"15m\") is unchanged. data-testId, data-active, onClick and ref behavior are preserved.",
+      "Pluralization: 1 gives \"Duration: 1 minute\", 90 gives \"Duration: 1 hour 30 minutes\", and 120 gives \"Duration: 2 hours\". Units come from the existing minute_one/minute_other and hour_one/hour_other keys.",
+      "New key \"duration_aria_label\": \"Duration: {{duration}}\" is added to packages/i18n/locales/en/common.json directly above the ADD_NEW_STRINGS_ABOVE_THIS_LINE marker, and the component has no hardcoded English. No other locale files change.",
+      "The only markup change is an unstyled <span> wrapper (no className) in place of the bare fragments, plus an aria-label attribute on each <li>. No visible text, classes or positions change.",
+      "getDurationFormatted is not modified, so BookFormAsModal output is identical.",
+      "`TZ=UTC yarn vitest run apps/web/modules/bookings/components/event-meta/Duration.test.tsx` passes, and `yarn workspace @calcom/web lint` and `yarn workspace @calcom/web type-check` report no new errors.",
+      "Out of scope and unchanged: other event-meta blocks, the BookFormAsModal duration, non-English locales, and any dependency or tooling changes."
+    ],
+    "steps": [
+      "In Duration.tsx, add and export `getDurationAriaLabel(mins: number | undefined, t: TFunction)` below getDurationFormatted. It returns null for falsy mins. It computes hours = Math.floor(mins/60) and the remainder, builds parts using t(\"hour\", { count: hours }) when hours > 0 and t(\"minute\", { count: rem }) when rem > 0, joins them with a space, and returns t(\"duration_aria_label\", { duration }). Leave getDurationFormatted untouched.",
+      "In EventDuration, replace `<>{getDurationFormatted(event.length, t)}</>` (line 93) with `<span aria-label={getDurationAriaLabel(event.length, t) ?? undefined}>{getDurationFormatted(event.length, t)}</span>`. Do the same at line 101 using `selectedDuration || event.length`. Do not add a className or role (decision: the PM criteria require only aria-label; role=\"img\" would change semantics).",
+      "In the selector branch, add `aria-label={getDurationAriaLabel(duration, t) ?? undefined}` to the existing <li>. Keep data-testId, data-active, key, onClick, ref, className and the inner <div className=\"w-max\"> exactly as they are.",
+      "In packages/i18n/locales/en/common.json, insert `\"duration_aria_label\": \"Duration: {{duration}}\",` on the line directly above \"ADD_NEW_STRINGS_ABOVE_THIS_LINE_TO_PREVENT_MERGE_CONFLICTS\". Keep the JSON valid with 2-space indentation.",
+      "Create Duration.test.tsx next to Duration.tsx. Use vi.mock(\"@calcom/lib/hooks/useLocale\") with a plain (non-vi.fn) t built from the en/common.json strings. It selects `${key}_one`/`${key}_other` when count is given (falling back to key), interpolates {{var}}, and resolves nested $t(key) (needed for multiple_duration_timeUnit_short). Plain functions are needed because test-setup's afterEach calls vi.resetAllMocks.",
+      "In the same test, mock \"@calcom/atoms/hooks/useIsPlatform\" ({ useIsPlatform: () => false }) and \"@calcom/web/modules/apps/components/AllApps\" ({ useShouldShowArrows: () => ({ ref: { current: null }, calculateScroll: () => {}, leftVisible: false, rightVisible: false }) }). Set useIsEmbed's return value in beforeEach if needed, because the global mock is reset after each test.",
+      "Render with `render` from @calcom/features/bookings/Booker/__tests__/test-utils using mockStore { selectedDuration, state: \"selecting_time\", setSelectedDuration: vi.fn() } for the multi-duration cases. Assert with screen.getByLabelText / getByText and toHaveAttribute(\"aria-label\", ...). For selector mode, assert getByTestId(\"multiple-choice-15mins\") has the aria-label and visible \"15m\", and that fireEvent.click calls setSelectedDuration(15).",
+      "Run `TZ=UTC yarn vitest run apps/web/modules/bookings/components/event-meta/Duration.test.tsx`, then `yarn workspace @calcom/web lint` and `yarn workspace @calcom/web type-check`. Run `yarn test` if time permits."
+    ],
+    "risk": "low",
+    "open_questions": []
+  },
+  "evaluation": {
+    "summary": "The plan matches the issue and the PM criteria, and every criterion has a planned test. Next step is implementation, but first check the risk of putting aria-label on a span that has no role.",
+    "aligned": true,
+    "score": 0.86,
+    "risk": "low",
+    "requires_human": false,
+    "missing_acceptance_criteria": [],
+    "findings": [
+      "Scope: all three files (Duration.tsx, en/common.json, new Duration.test.tsx) are inside the allowed prefixes and extensions. None is under a human_review prefix. No dependency or tooling changes.",
+      "Code check: Duration.tsx:93 and :101 do return bare fragments, the selector <li> is at :121-132, and getDurationFormatted (:14-38) stays untouched. en/common.json has minute_one/minute_other (1805/1807) and hour_one/hour_other (1808/1810), and the ADD_NEW_STRINGS marker is at 4774. Duration.test.tsx does not exist yet, so it is a real new test.",
+      "Each PM criterion maps to a test: single 30 → 'Duration: 30 minutes' with visible '30m'; hidden-selector with selectedDuration and with the event.length fallback; selector <li> labels plus data-testid, data-active and click; pluralization for 1, 90 and 120; getDurationFormatted output unchanged. The i18n key and 'no hardcoded English' are covered by the step that builds the t mock from en/common.json plus code review. Visible layout is covered by the visible-text assertions.",
+      "Accessibility risk (not blocking): ARIA treats a plain <span> with no role as generic, and naming it with aria-label is prohibited. Many screen readers ignore that label and read '30m' anyway. So in the single-duration and hidden-selector branches the plan meets the letter of the PM criteria but may not fix the user's problem. The plan chose this deliberately. The alternative that keeps the visible output the same is an sr-only text node plus aria-hidden on the visible text. The <li> option labels are fine.",
+      "Gap in the test steps: step 7 uses the test-utils render with mockStore only for the multi-duration cases. The single-duration cases also call useBookerStoreContext, so they need the same store-provider render. The implementer should use it for every case.",
+      "Lint: biome.json has the a11y rules turned off, so `yarn workspace @calcom/web lint` (biome lint) will not flag the aria-label/role choice. The research confirmed the test commands. The type-check script exists (tsc --noEmit).",
+      "The plan says to use plain functions instead of vi.fn in the mocks, so they still work after test-setup's afterEach vi.resetAllMocks. That handles the global mock-reset problem. The globally mocked useIsEmbed returns undefined after reset, which is harmless."
+    ]
+  },
+  "plan_fingerprint": "877c5dcd026aa82cedec1d7123cf53ae445bc85dbc43c3de84c009ebbac28e33"
 }
