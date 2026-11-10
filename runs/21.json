@@ -1,5 +1,5 @@
 {
-  "status": "research",
+  "status": "design_need",
   "issue": {
     "number": 21,
     "title": "New settings page listing upcoming booking reminders",
@@ -38,7 +38,7 @@
   "clarification_comment_ids": [
     6756289657
   ],
-  "updated_at": 1794274287,
+  "updated_at": 1794274289,
   "pm": {
     "summary": "New read-only Settings page listing reminder emails for the host's upcoming bookings, send time fixed at 24h before start. This is a new screen, so it goes to the Designer next.",
     "scope_type": "screen",
@@ -60,5 +60,38 @@
       "Tests cover the 24h computation, host-only filtering and the empty state."
     ],
     "questions": []
+  },
+  "research": {
+    "summary": "Research done: settings pages are server page.tsx plus a client view, nav lives in SettingsLayoutAppDirClient. Data must be fetched without packages/trpc, which is out of scope. Next: PM decides, then the plan.",
+    "kind": "feature",
+    "relevant_files": [
+      "apps/web/app/(use-page-wrapper)/settings/(settings-layout)/SettingsLayoutAppDirClient.tsx (nav items; my_account list with appearance/out_of_office entries around lines 62-75)",
+      "apps/web/app/(use-page-wrapper)/settings/(settings-layout)/my-account/out-of-office/page.tsx (simplest page template with _generateMetadata)",
+      "apps/web/app/(use-page-wrapper)/settings/(settings-layout)/my-account/appearance/page.tsx (session check with getServerSession+buildLegacyRequest, redirect to /auth/login?callbackUrl=...)",
+      "apps/web/app/(use-page-wrapper)/settings/(settings-layout)/developer/webhooks/[id]/page.tsx (server page that reads data through a repository and prisma directly, no trpc)",
+      "apps/web/modules/settings/my-account/push-notifications-view.tsx (client view using SettingsHeader, useLocale)",
+      "apps/web/modules/settings/my-account/out-of-office-view.tsx and apps/web/modules/settings/outOfOffice/OutOfOfficeEntriesList.tsx (list and empty-state pattern)",
+      "packages/features/settings/appDir/SettingsHeader.tsx",
+      "packages/features/bookings/repositories/BookingRepository.ts (human-review area: read only; query shape with BookingStatus.ACCEPTED, userId, attendees)",
+      "packages/lib/dateTimeFormatter.ts (locale and timezone formatting helper) and packages/lib/dateTimeFormatter.test.ts (test style)",
+      "packages/i18n/locales/en/common.json (add strings such as booking_reminders, description, empty state, column labels)"
+    ],
+    "patterns": [
+      "New page = server page.tsx (generateMetadata via _generateMetadata, getServerSession check, redirect to /auth/login when logged out) rendering a client view from apps/web/modules/settings/my-account/*-view.tsx, imported as ~/settings/my-account/...",
+      "Nav entry: add an item with name (i18n key), href and trackingMetadata {section: \"my_account\", page: ...} to SettingsLayoutAppDirClient.tsx",
+      "Views wrap content in SettingsHeader (title, description, borderInShellHeader) and use useLocale() t(...) for every string",
+      "Constraint: packages/trpc is outside the allowed scope, so a trpc router is not an option. Fetch in the server page via a prisma query or a small helper in packages/features/ or packages/lib/, and pass props to the client view. Server-side session scoping gives the user isolation.",
+      "Avoid putting new files in the human-review prefixes packages/features/auth/, packages/lib/server/ and packages/features/bookings/lib/. Adding a method to BookingRepository.ts is also in the review area (bookings/repositories is not listed, but it is the natural place), so prefer a new file under packages/features/settings/ or a new feature folder.",
+      "Pure helper, e.g. computeReminderSendTime(start) = start minus 24h via dayjs or Date arithmetic, kept separate so it is unit-testable",
+      "Query filter: userId = session user (organizer only), status ACCEPTED (maybe also PENDING; PM said not cancelled or rejected), startTime > now, order by startTime asc. This implies send time ascending since the offset is constant. Select title, startTime, and attendees' name/email.",
+      "Format the send time with the user's timeZone and locale (dateTimeFormatter or Intl); get them from the user profile (timeZone, locale) or the session",
+      "Tests are colocated *.test.ts or *.test.tsx. Vitest workspace includes packages/**/*.{test,spec}.{ts,js}, apps/**/*.{test,spec}.{ts,js}, apps/web/modules/**/*.{test,spec}.tsx and packages/features/**/*.{test,spec}.tsx. Use .test.tsx for view/empty-state tests under apps/web/modules/ or packages/features/, and .test.ts for pure logic. Mock prisma for the host-only filter test."
+    ],
+    "test_commands": [
+      "TZ=UTC yarn vitest run <path-to-new-test-file>",
+      "yarn test (runs TZ=UTC vitest run)",
+      "yarn type-check",
+      "yarn lint"
+    ]
   }
 }
