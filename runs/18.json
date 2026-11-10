@@ -1,5 +1,5 @@
 {
-  "status": "plan",
+  "status": "implement",
   "issue": {
     "number": 18,
     "title": "Add aria-label to the booking page duration badge",
@@ -72,7 +72,7 @@
     }
   ],
   "clarification_comment_ids": [],
-  "updated_at": 1794274423,
+  "updated_at": 1794274425,
   "pm": {
     "summary": "Small UI change: give every duration shown on the booking page a localized screen-reader label like \"Duration: 30 minutes\", keep the visible text the same, and add a unit test. Ready for implementation.",
     "scope_type": "ui_change",
@@ -130,5 +130,70 @@
     "design_brief": "",
     "effective_needed": false
   },
-  "design_required": false
+  "design_required": false,
+  "plan": {
+    "summary": "Wrap each duration in Duration.tsx with an i18n aria-label built from the existing long-form hour and minute keys. Add one English key and a co-located unit test. Next step: implementation.",
+    "files": [
+      "apps/web/modules/bookings/components/event-meta/Duration.tsx",
+      "packages/i18n/locales/en/common.json",
+      "apps/web/modules/bookings/components/event-meta/Duration.test.tsx"
+    ],
+    "tests": [
+      {
+        "path": "apps/web/modules/bookings/components/event-meta/Duration.test.tsx",
+        "kind": "new_test",
+        "purpose": "Render EventDuration with the store-backed `render` helper from @calcom/features/bookings/Booker/__tests__/test-utils. Cover four cases: single duration (length 30): getByLabelText(\"Duration: 30 minutes\") has text \"30m\". Hidden selector (multipleDuration [15,30,90], hideDurationSelectorInBookingPage, selectedDuration 90): label \"Duration: 1 hour 30 minutes\", text \"1h 30m\". Visible selector (selectedDuration 30): the multiple-choice-15mins li has aria-label \"Duration: 15 minutes\" and text \"15m\", data-active is unchanged, and clicking it calls setSelectedDuration(15). getDurationFormatted(90, t) still returns \"1h 30m\" (BookFormAsModal output unchanged)."
+      },
+      {
+        "path": "apps/web/modules/bookings/components/DatePicker.test.tsx",
+        "kind": "existing_test",
+        "purpose": "Run it with the folder command to check that the booking component tests still pass (uses the same test-utils render helper)."
+      }
+    ],
+    "acceptance_criteria": [
+      "Single-duration event: the duration text is wrapped in an element whose aria-label is \"Duration: <duration>\", e.g. a 30-minute event exposes \"Duration: 30 minutes\"; the visible text stays \"30m\".",
+      "Multiple-duration event with the selector hidden: the shown duration (selectedDuration, or event.length as fallback) gets the same kind of aria-label, matching the visible value.",
+      "Selector visible (multiple durations or dynamic event): each duration <li> has aria-label \"Duration: <duration>\" (e.g. \"Duration: 15 minutes\"); data-testId, data-active, onClick, ref and classNames are unchanged.",
+      "Durations of 60 minutes or more use long-form words, e.g. 90 → \"Duration: 1 hour 30 minutes\", 60 → \"Duration: 1 hour\", 120 → \"Duration: 2 hours\". The label never uses the short form such as \"1h 30m\".",
+      "Visible text is identical on all paths (\"30m\", \"1h 30m\"). The new wrapper is an unstyled inline <span> with no className, so layout and styling do not change.",
+      "packages/i18n/locales/en/common.json gains \"duration_aria_label\": \"Duration: {{duration}}\" next to the other duration keys. The label words come from t(\"duration_aria_label\") plus the existing pluralized t(\"hour\", { count }) and t(\"minute\", { count }) keys. No user-facing string is hardcoded.",
+      "getDurationFormatted keeps its signature and return values, so BookFormAsModal output is unchanged.",
+      "The new Duration.test.tsx passes, along with the event-meta folder tests, the @calcom/web type-check and the @calcom/web lint."
+    ],
+    "steps": [
+      "In packages/i18n/locales/en/common.json, add `\"duration_aria_label\": \"Duration: {{duration}}\"` right after `\"multiple_duration_timeUnit_short\"` (around line 927). Do not touch any other locale file.",
+      "In Duration.tsx, add an exported helper next to getDurationFormatted: `getDurationAccessibleLabel(mins: number | undefined, t: TFunction)`. It returns undefined when mins is falsy. Otherwise it splits mins into hours and minutes the same way getDurationFormatted does. It builds parts with t(\"hour\", { count: hours }) when hours > 0 and t(\"minute\", { count: minutes }) when minutes > 0, joins them with a space, and returns t(\"duration_aria_label\", { duration }). Match the style of getDurationFormatted and add a one-line doc comment. Leave getDurationFormatted unchanged.",
+      "Duration.tsx line 93: replace the fragment with `<span aria-label={getDurationAccessibleLabel(event.length, t)}>{getDurationFormatted(event.length, t)}</span>`.",
+      "Duration.tsx line 101: do the same with `selectedDuration || event.length`.",
+      "Duration.tsx line 121: add `aria-label={getDurationAccessibleLabel(duration, t)}` to the <li>. Keep every other attribute and the inner `<div className=\"w-max\">` as they are.",
+      "Create apps/web/modules/bookings/components/event-meta/Duration.test.tsx. Mock @calcom/atoms/hooks/useIsPlatform to return false. Locally vi.mock @calcom/lib/hooks/useLocale with a plain (non-vi.fn) t that interpolates the keys used: minute/hour plural, minute_one_short, hour_one_short, multiple_duration_timeUnit_short and duration_aria_label. The plain function matters because the global test-setup calls vi.resetAllMocks after each test. useIsEmbed is already mocked by test-setup. Mock @calcom/web/modules/apps/components/AllApps' useShouldShowArrows (returning { ref: { current: null }, calculateScroll: noop, leftVisible: false, rightVisible: false }) only if importing it pulls in heavy dependencies. Use `render` from the Booker test-utils with a mockStore (selectedDuration, state, setSelectedDuration) and write the cases listed under tests.",
+      "Run `TZ=UTC yarn vitest run apps/web/modules/bookings/components/event-meta/Duration.test.tsx`, then `yarn test apps/web/modules/bookings/components/event-meta`, `yarn workspace @calcom/web type-check` and `yarn workspace @calcom/web lint`, and fix any issues."
+    ],
+    "risk": "low",
+    "open_questions": []
+  },
+  "evaluation": {
+    "summary": "The plan matches the issue and every PM acceptance criterion. It can go to implementation, but the implementer should check how screen readers handle an aria-label on a plain span.",
+    "aligned": true,
+    "score": 0.85,
+    "risk": "low",
+    "requires_human": false,
+    "missing_acceptance_criteria": [],
+    "findings": [
+      "Scope: all three files (Duration.tsx, en/common.json, new Duration.test.tsx) are within the allowed prefixes and extensions. None is under a human-review prefix, and there are no lockfile, tooling or dependency changes.",
+      "Code check: Duration.tsx:93 and :101 return bare fragments and :121-131 renders the <li>, as the plan says. en/common.json has minute_one/minute_other and hour_one/hour_other at lines 1805-1810 and multiple_duration_timeUnit_short at line 927, so t('hour'|'minute', { count }) gives the long form with no new formatter key.",
+      "AC1 (single duration, 30 → 'Duration: 30 minutes'): covered by test case 1.",
+      "AC2 (selector hidden): covered by test case 2 (selectedDuration 90 → 'Duration: 1 hour 30 minutes', visible '1h 30m').",
+      "AC3 (selector visible, per-option label, selected and click behavior unchanged): covered by test case 3 (aria-label on multiple-choice-15mins, data-active, setSelectedDuration(15)). The dynamic-event variant has no test, but the PM only requires one multiple-duration option.",
+      "AC4 (≥60 minutes in long form, not the short form): covered by the 90-minute hidden-selector case. The 60 and 120 cases are in the plan's criteria but not its tests; adding them would be cheap but is optional.",
+      "AC5 (visible text unchanged): each test case checks the visible text. The unstyled <span> wrapper is inline, so it should not change layout inside EventMetaBlock.",
+      "AC6 (i18n): the new duration_aria_label key in en/common.json is put together with the existing plural keys, so no user-facing string is hardcoded. Other locales fall back to English, which is acceptable.",
+      "AC7 (getDurationFormatted and BookFormAsModal unchanged): the function is left as is, and test case 4 checks that getDurationFormatted(90) still returns '1h 30m'.",
+      "AC8 (unit test in apps/web/ that passes): the co-located Duration.test.tsx is picked up by the '@calcom/web/modules/views' vitest project. The plan's warning about vi.resetAllMocks in test-setup.ts (use a plain t, not vi.fn) is correct.",
+      "Concern, not blocking: under ARIA 1.2, aria-label on a <span> with no role is prohibited, and screen readers may not announce it. getByLabelText will still pass, so the test cannot catch this. The <li> path is fine. A more reliable pattern for the two fragment paths is a visually hidden (sr-only) label plus aria-hidden on the visible text. Biome a11y lint is off ('a11y': 'off' in biome.json), so lint won't flag either approach.",
+      "Minor: the existing test listed for regression, DatePicker.test.tsx, is in apps/web/modules/bookings/components/, not in event-meta/, so `yarn test apps/web/modules/bookings/components/event-meta` will not run it. Running `yarn test apps/web/modules/bookings/components` would include it.",
+      "All test commands come from research and fit the repo (root `test` script is `TZ=UTC vitest run`)."
+    ]
+  },
+  "plan_fingerprint": "49213ea5272b208fcd869a4ed022aa4f375290612673b35dc82a44d7ed9e5efb"
 }
