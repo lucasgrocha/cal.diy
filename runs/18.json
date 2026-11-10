@@ -1,5 +1,5 @@
 {
-  "status": "design_need",
+  "status": "plan",
   "issue": {
     "number": 18,
     "title": "Add aria-label to the booking page duration badge",
@@ -48,7 +48,7 @@
     }
   ],
   "clarification_comment_ids": [],
-  "updated_at": 1794276335,
+  "updated_at": 1794276337,
   "pm": {
     "summary": "Add a localized \"Duration: 30 minutes\" accessible label to the booking page duration text, with the visible text unchanged. No questions; next step is implementation with a unit test.",
     "scope_type": "ui_change",
@@ -91,5 +91,13 @@
       "yarn workspace @calcom/web type-check",
       "yarn workspace @calcom/web lint"
     ]
-  }
+  },
+  "design_need": {
+    "summary": "No design needed: this adds an accessible label to existing duration text, with no new screen and no visible change. Next step is the plan and implementation with a unit test.",
+    "needed": false,
+    "confidence": 0.97,
+    "design_brief": "",
+    "effective_needed": false
+  },
+  "design_required": false
 }
