@@ -1,5 +1,5 @@
 {
-  "status": "pm",
+  "status": "needs_information",
   "issue": {
     "number": 21,
     "title": "New settings page listing upcoming booking reminders",
@@ -24,5 +24,24 @@
     }
   ],
   "clarification_comment_ids": [],
-  "updated_at": 1794274070
+  "updated_at": 1794274071,
+  "pm": {
+    "summary": "New read-only Settings page is feasible UI-wise, but the codebase has no model of scheduled reminders with send times. I need a decision on the data source before design.",
+    "scope_type": "screen",
+    "complexity": "complex",
+    "requires_plan_approval": true,
+    "acceptance_criteria": [
+      "A new entry appears in the Settings navigation and opens the new page for a logged-in user.",
+      "The page lists reminders for the user's upcoming bookings only (not past or cancelled bookings).",
+      "Each row shows booking title, attendee, and scheduled send time, shown in the user's timezone.",
+      "The page is read-only: no edit, cancel or create actions.",
+      "When there are no upcoming reminders, an empty state with explanatory text is shown.",
+      "A user sees only their own bookings' reminders, never other users'.",
+      "All visible strings are translated via the i18n locale file.",
+      "Unauthenticated users are redirected to login."
+    ],
+    "questions": [
+      "The code has no data on scheduled reminder emails (ReminderMail only logs sent pending-confirmation reminders, with no send time). Should the page show computed reminders (e.g. derived from booking start time minus a fixed offset), or should we limit scope to something else?"
+    ]
+  }
 }
