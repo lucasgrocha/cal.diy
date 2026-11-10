@@ -1,5 +1,5 @@
 {
-  "status": "implement",
+  "status": "testing",
   "issue": {
     "number": 18,
     "title": "Add aria-label to the booking page duration badge",
@@ -86,7 +86,7 @@
     }
   ],
   "clarification_comment_ids": [],
-  "updated_at": 1794276732,
+  "updated_at": 1794276739,
   "pm": {
     "summary": "Add a localized \"Duration: 30 minutes\" accessible label to the booking page duration text, with the visible text unchanged. No questions; next step is implementation with a unit test.",
     "scope_type": "ui_change",
@@ -197,5 +197,26 @@
     ]
   },
   "plan_fingerprint": "bdc70a16cb2a1094a2c657b50e39cf0033059bebbec82c5dd275c97c4ffce925",
-  "asked_by": null
+  "asked_by": null,
+  "branch": "harness/issue-18",
+  "head_sha": "15a7250a2d37027238a2824fb6733da73b2516c9",
+  "pr_number": 19,
+  "pr_url": "https://github.com/lucasgrocha/cal.diy/pull/19",
+  "implementation": {
+    "summary": "The booking page duration text now has a localized label like \"Duration: 1 hour 30 minutes\", and the visible text is unchanged. New tests and lint pass. Workspace type-check fails, but none of its errors are in changed files. Ready for validation.",
+    "files": [
+      "apps/web/modules/bookings/components/event-meta/Duration.tsx",
+      "packages/i18n/locales/en/common.json",
+      "apps/web/modules/bookings/components/event-meta/Duration.test.tsx"
+    ],
+    "verification": [
+      "TZ=UTC yarn vitest run apps/web/modules/bookings/components/event-meta/Duration.test.tsx: 1 file, 6 tests passed. The tests use real i18next with en/common.json and cover: fixed 30m gets the label \"Duration: 30 minutes\"; 90m gets \"Duration: 1 hour 30 minutes\" with visible \"1h 30m\"; the hidden-selector branch gets \"Duration: 1 hour\"; the multi-duration selector has no label and clicking an option still calls setSelectedDuration(60); getDurationFormatted still returns \"30m\", \"1h\" and \"1h 30m\".",
+      "TZ=UTC yarn vitest run apps/web/modules/bookings/components: 4 files, 21 tests passed.",
+      "yarn workspace @calcom/web type-check: fails with 597 errors in 156 files across the repo. None are in Duration.tsx or Duration.test.tsx. I did not compare against main, so I have not confirmed that all 597 were already there before this change.",
+      "yarn workspace @calcom/web lint: 996 files checked, 0 errors (warnings and infos only).",
+      "yarn biome check on the test file: no errors or warnings, 2 infos. On Duration.tsx: 1 error, the import order, which was already there before this change; I left the imports alone to keep the diff small. The new helpers get only the same warnings the rest of the file has (noTernary, useExplicitType). common.json: clean.",
+      "Implementation: added a `duration_label` key (\"Duration: {{duration}}\") to the English common.json only, after `duration`. Added an exported `getDurationLabelFormatted` that builds full units from the existing hour/minute plural keys, and an internal `DurationText` span with the aria-label, used in the fixed-duration and hide-selector branches. getDurationFormatted and the multi-duration selector are unchanged."
+    ]
+  },
+  "attempts": 1
 }
