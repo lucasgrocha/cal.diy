@@ -1,5 +1,5 @@
 {
-  "status": "plan",
+  "status": "needs_information",
   "issue": {
     "number": 21,
     "title": "New settings page listing upcoming booking reminders",
@@ -86,7 +86,7 @@
   "clarification_comment_ids": [
     6756289657
   ],
-  "updated_at": 1794274878,
+  "updated_at": 1794274880,
   "pm": {
     "summary": "New read-only Settings page listing reminder emails for the host's upcoming bookings, send time fixed at 24h before start. This is a new screen, so it goes to the Designer next.",
     "scope_type": "screen",
@@ -181,5 +181,95 @@
     "mockup": "NAV (My account): ... Appearance | Out of office | Booking reminders | Push notifications ...\n\nPOPULATED (desktop)\n+--------------------------------------------------------------------+\n| Booking reminders                                                  |\n| Reminder emails scheduled for your upcoming bookings.              |\n+--------------------------------------------------------------------+\n| BOOKING             | ATTENDEE                    | SEND TIME       |\n|---------------------|-----------------------------|-----------------|\n| 30 min intro call   | Ana Lima                    | Nov 11, 2026    |\n|                     | ana@example.com             | 9:00 AM         |\n| Product demo with a | Bo Chen +2                  | Nov 12, 2026    |\n| very long ti...     | bo@exampl... (tooltip: all) | 2:30 PM         |\n+--------------------------------------------------------------------+\n(+N = Badge with Tooltip listing every attendee; name/title/email truncate with ellipsis and title attribute)\n\nMOBILE (<640px): column headers hidden, each row stacked\n+------------------------------+\n| 30 min intro call            |\n| Ana Lima · ana@example.com   |\n| Sends Nov 11, 2026, 9:00 AM  |\n+------------------------------+\n\nEMPTY (EmptyScreen, no CTA)\n+--------------------------------------------------------------------+\n|                          (bell icon)                               |\n|                   No upcoming reminders                            |\n|  Reminders are sent 24 hours before your upcoming bookings.        |\n|  They will show up here once someone books a time with you.        |\n+--------------------------------------------------------------------+\n\nLOADING: server-rendered; optional SkeletonText rows (3) in a loading.tsx.\nERROR: server fetch failure falls to the Next error boundary; inline Alert (severity error) 'Could not load booking reminders. Try again later.'\nA11Y: real <table> with <caption class=sr-only>, th scope=col, <time dateTime> for send time, no interactive controls except focusable tooltip triggers.\n\nCOMPONENTS: SettingsHeader, EmptyScreen, Badge, Tooltip, SkeletonText, Alert (packages/ui), ClockIcon/BellIcon from @coss/ui/icons.\nCOPY KEYS: booking_reminders='Booking reminders'; booking_reminders_description='Reminder emails scheduled for your upcoming bookings.'; booking_reminders_column_booking='Booking'; ..._column_attendee='Attendee'; ..._column_send_time='Send time'; booking_reminders_empty_title='No upcoming reminders'; booking_reminders_empty_description='Reminders are sent 24 hours before your upcoming bookings. They will show up here once someone books a time with you.'; booking_reminders_load_error='Could not load booking reminders. Try again later.'; booking_reminders_more_attendees='+{{count}} more'",
     "actor": "lucasgrocha",
     "comment_id": 6756467505
-  }
+  },
+  "plan": {
+    "summary": "Plan: a read-only \"Booking reminders\" settings page. A server page queries the host's upcoming bookings through prisma and passes rows to a client table view. A pure helper sets send time to start minus 24h. Needs plan approval.",
+    "files": [
+      "apps/web/app/(use-page-wrapper)/settings/(settings-layout)/SettingsLayoutAppDirClient.tsx (add nav item booking_reminders after out_of_office)",
+      "apps/web/app/(use-page-wrapper)/settings/(settings-layout)/my-account/booking-reminders/page.tsx (new: generateMetadata, session check, redirect to /auth/login?callbackUrl=..., fetch, render view)",
+      "apps/web/modules/settings/my-account/booking-reminders-view.tsx (new client view: SettingsHeader, responsive table, EmptyScreen, +N attendees Badge/Tooltip)",
+      "packages/features/settings/bookingReminders/computeReminderSendTime.ts (new pure helper: start minus 24h)",
+      "packages/features/settings/bookingReminders/getUpcomingBookingReminders.ts (new prisma query, userId = host, upcoming, ACCEPTED/PENDING, ordered by startTime asc, maps to rows with sendTime)",
+      "packages/features/settings/bookingReminders/computeReminderSendTime.test.ts (new)",
+      "packages/features/settings/bookingReminders/getUpcomingBookingReminders.test.ts (new)",
+      "apps/web/modules/settings/my-account/booking-reminders-view.test.tsx (new)",
+      "packages/i18n/locales/en/common.json (add booking_reminders* keys)",
+      "packages/features/settings/bookingReminders/computeReminderSendTime.test.ts",
+      "packages/features/settings/bookingReminders/getUpcomingBookingReminders.test.ts",
+      "apps/web/modules/settings/my-account/booking-reminders-view.test.tsx"
+    ],
+    "tests": [
+      {
+        "path": "packages/features/settings/bookingReminders/computeReminderSendTime.test.ts",
+        "kind": "new_test",
+        "purpose": "Send time is exactly 24h before start, including across a DST boundary and month boundaries."
+      },
+      {
+        "path": "packages/features/settings/bookingReminders/getUpcomingBookingReminders.test.ts",
+        "kind": "new_test",
+        "purpose": "With prisma mocked, asserts the where clause: userId is the host, startTime > now, cancelled and rejected excluded, orderBy startTime asc. Also checks row mapping."
+      },
+      {
+        "path": "apps/web/modules/settings/my-account/booking-reminders-view.test.tsx",
+        "kind": "new_test",
+        "purpose": "Empty state renders with its text and no controls. Populated rows show title, attendee and a formatted send time in the user's timezone, with no buttons or forms."
+      }
+    ],
+    "acceptance_criteria": [
+      "Settings nav under My account has a 'Booking reminders' entry linking to /settings/my-account/booking-reminders.",
+      "The page lists one row per upcoming booking where the user is the host, with title, attendee and send time.",
+      "Send time is start minus exactly 24h, shown in the user's timezone and locale format.",
+      "Attendee-only, cancelled, rejected and past bookings are excluded. Rows are ordered by send time ascending.",
+      "Past send times for upcoming bookings are listed as is.",
+      "The empty state shows its explanatory text when there are no rows.",
+      "The page is read-only: no buttons or forms.",
+      "Logged-out users are redirected to login. The query is scoped to the session user id.",
+      "No scheduler, schema, migration or packages/trpc changes.",
+      "All strings come from en/common.json.",
+      "The new tests pass with TZ=UTC yarn vitest run, and yarn type-check and yarn lint pass."
+    ],
+    "steps": [
+      "Add computeReminderSendTime.ts using Date arithmetic (start.getTime() - 24*3600*1000) and its unit test.",
+      "Add getUpcomingBookingReminders.ts using prisma directly: where {userId, startTime: {gt: now}, status in [ACCEPTED, PENDING]}, select id, title, startTime, attendees {name, email}, orderBy startTime asc. Map to rows with sendTime. Its test mocks prisma. Add to the new feature folder only, not BookingRepository.ts, to avoid the human-review area.",
+      "Add the en/common.json keys from the design: booking_reminders, _description, _column_booking, _column_attendee, _column_send_time, _empty_title, _empty_description, _load_error, _more_attendees.",
+      "Build booking-reminders-view.tsx as a client component (props: rows, timeZone, locale) following out-of-office-view and the selected design: SettingsHeader, real table with sr-only caption, th scope=col, time dateTime, stacked rows below sm, EmptyScreen with BellIcon and no CTA, +N Badge with Tooltip for extra attendees. Format send time with Intl or dateTimeFormatter. Add the view test.",
+      "Add the page.tsx following the appearance page: getServerSession with buildLegacyRequest, redirect to login when there is no session, read the user's timeZone and locale, call the query, and render the view. Add _generateMetadata. A fetch failure goes to the Next error boundary.",
+      "Add the nav item in SettingsLayoutAppDirClient.tsx with trackingMetadata {section: 'my_account', page: 'booking_reminders'}.",
+      "Run TZ=UTC yarn vitest run on the three new tests, then yarn type-check and yarn lint."
+    ],
+    "risk": "medium",
+    "open_questions": [
+      "Should PENDING (unconfirmed) bookings be listed along with ACCEPTED? The plan assumes yes, since the PM only excluded cancelled and rejected.",
+      "Is the optional loading.tsx skeleton wanted? The plan leaves it out to keep the change small."
+    ]
+  },
+  "evaluation": {
+    "summary": "Plan fits scope and the selected design, but test coverage has gaps (redirect, rendered ordering, status filter) and the files list has duplicates. Revise these, then confirm the PENDING assumption.",
+    "aligned": true,
+    "score": 0.72,
+    "risk": "medium",
+    "requires_human": true,
+    "missing_acceptance_criteria": [
+      "Logged-out redirect / no data access has no test (only stated in the plan criteria, no page test)",
+      "Rows ordered by send time ascending is only asserted via the orderBy clause in the mocked query test, not on rendered rows",
+      "Attendee-only exclusion is covered only by the where clause (userId = host); no explicit test of attendee-only exclusion beyond that",
+      "Nav entry 'Booking reminders' has no test",
+      "Past-send-time rows listed as is has no explicit test",
+      "All strings in en/common.json is verified only by review, not by a test",
+      "Attendee shown as 'Name +N' with multiple attendees is not tested"
+    ],
+    "findings": [
+      "Files list repeats the three test paths at the end (duplicates); clean up so each file appears once.",
+      "All planned files are inside the allowed prefixes and extensions; none touch human_review prefixes or apps/web/proxy.ts. Avoiding BookingRepository.ts and packages/trpc is correct.",
+      "Plan assumes PENDING bookings are listed (open question). PM only excluded cancelled and rejected, so this is a reasonable reading, but the test should assert the status filter explicitly (ACCEPTED and PENDING in, CANCELLED/REJECTED out), not just 'excluded'. Confirm with the PM or owner.",
+      "The where clause uses status in [ACCEPTED, PENDING]; PM text says 'cancelled and rejected not listed', and the test purpose should match that. Consider whether other statuses (e.g. AWAITING_HOST) exist; the allow-list could silently drop them.",
+      "Query test mocks prisma and asserts where/orderBy, which covers the host-only filter and 24h mapping at the data layer. The page-level session check (redirect, userId from session) is untested; add a small test or explicitly justify the gap.",
+      "The 24h computation uses fixed-millisecond arithmetic, which is correct for 'exactly 24 hours'. The DST test case should assert absolute instants (not wall-clock), as the displayed local time can differ by an hour across DST. State this in the test purpose.",
+      "Design is followed: responsive table, sr-only caption, th scope=col, time dateTime, EmptyScreen without CTA, +N Badge with Tooltip, no interactive controls. Design copy keys are listed in full. The load_error key is added but the plan routes errors to the Next error boundary, so the key may be unused; either use the Alert or drop the key.",
+      "Optional loading.tsx is left out, which is fine since the design marks it optional.",
+      "Ensure the query caps or limits results is not mentioned; consider a take limit to avoid unbounded rows (not in the PM criteria, so optional).",
+      "Page lives under packages/features/settings/ for the query helper, which is allowed. Because the apps/web page imports prisma data directly, confirm that the repo's lint rules do not forbid prisma use in apps/web or require the repository pattern."
+    ]
+  },
+  "plan_fingerprint": "ebc4939189325797c51389682df9807ba316591ec3c2382ab3fb42d5a98b3ec8"
 }
