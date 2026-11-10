@@ -918,6 +918,7 @@
   "collective": "Collective",
   "collective_description": "Schedule meetings when all selected team members are available.",
   "duration": "Duration",
+  "duration_aria_label": "Duration: {{duration}}",
   "available_durations": "Available durations",
   "default_duration": "Default duration",
   "default_duration_no_options": "Please choose available durations first",

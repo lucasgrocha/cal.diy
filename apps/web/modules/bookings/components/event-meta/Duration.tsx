@@ -37,6 +37,17 @@ export const getDurationFormatted = (mins: number | undefined, t: TFunction) => 
   return hourStr || minStr;
 };
 
+/** Long-form localized accessible label, e.g. "Duration: 1 hour 30 minutes" */
+export const getDurationAriaLabel = (mins: number | undefined, t: TFunction) => {
+  if (!mins) return undefined;
+  const hours = Math.floor(mins / 60);
+  const minutes = mins % 60;
+  const parts: string[] = [];
+  if (hours > 0) parts.push(t("hour", { count: hours }));
+  if (minutes > 0) parts.push(t("minute", { count: minutes }));
+  return t("duration_aria_label", { duration: parts.join(" ") });
+};
+
 export const EventDuration = ({
   event,
 }: {
@@ -90,7 +101,7 @@ export const EventDuration = ({
   }, [selectedDuration, isEmbed]);
 
   if (!event?.metadata?.multipleDuration && !isDynamicEvent)
-    return <>{getDurationFormatted(event.length, t)}</>;
+    return <span aria-label={getDurationAriaLabel(event.length, t)}>{getDurationFormatted(event.length, t)}</span>;
 
   const durations = event?.metadata?.multipleDuration || [15, 30, 60, 90];
   const hideDurationSelector = event?.metadata?.hideDurationSelectorInBookingPage;
@@ -98,7 +109,8 @@ export const EventDuration = ({
   // When duration selector is hidden, show only the selected/default duration as text
   // URL params can still set the duration, but the user cannot change it via UI
   if (hideDurationSelector) {
-    return <>{getDurationFormatted(selectedDuration || event.length, t)}</>;
+    const shown = selectedDuration || event.length;
+    return <span aria-label={getDurationAriaLabel(shown, t)}>{getDurationFormatted(shown, t)}</span>;
   }
 
   return selectedDuration ? (
@@ -122,6 +134,7 @@ export const EventDuration = ({
               data-testId={`multiple-choice-${duration}mins`}
               data-active={selectedDuration === duration ? "true" : "false"}
               key={index}
+              aria-label={getDurationAriaLabel(duration, t)}
               onClick={() => setSelectedDuration(duration)}
               ref={(el) => (itemRefs.current[duration] = el)}
               className={classNames(
