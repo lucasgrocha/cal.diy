@@ -1,50 +1,17 @@
 {
-  "status": "needs_information",
+  "status": "pm",
   "issue": {
     "number": 21,
     "title": "New settings page listing upcoming booking reminders",
-    "body": "Harness test (new screen). Add a new page under Settings where users see the reminder emails scheduled for their upcoming bookings (booking title, attendee, send time), read-only. Empty state when there are none."
+    "body": "Harness test (new screen). Add a new page under Settings where users see the reminder emails scheduled for their upcoming bookings (booking title, attendee, send time), read-only. Empty state when there are none.\n\nDetails from @lucasgrocha (comment 6756289657):\n1. Compute the send time with a fixed rule: 24 hours before the booking start. No new scheduler or schema change.\n2. Organizer only: bookings where the user is the host."
   },
-  "issue_digest": "922d881c4480825df16d84ca56e6ab7d772ea185d8877ed8d23849de6ff05419",
+  "issue_digest": "47f497eb285dc80649105e6ade2f2fc7e4cc87572e4d7859bc0553cc96350e04",
   "base_sha": "e6aad278a4cfc3e815a0c697f312f5f4fca307b9",
-  "run_id": "42735864694-1",
+  "run_id": "42736181721-1",
   "started_by": "lucasgrocha",
-  "stages": [
-    {
-      "name": "pm",
-      "sha": "e6aad278a4cfc3e815a0c697f312f5f4fca307b9",
-      "agent": "pm",
-      "at": 1794274130,
-      "usage": {
-        "input_tokens": 12,
-        "output_tokens": 1705,
-        "total_cost_usd": 0.0290532
-      },
-      "denied_tools": []
-    }
+  "stages": [],
+  "clarification_comment_ids": [
+    6756289657
   ],
-  "clarification_comment_ids": [],
-  "updated_at": 1794274132,
-  "pm": {
-    "summary": "New read-only Settings screen for upcoming booking reminders needs the Designer first. The schema has no scheduled-reminder data with a send time, so I need one decision on the data source.",
-    "scope_type": "screen",
-    "complexity": "complex",
-    "requires_plan_approval": true,
-    "acceptance_criteria": [
-      "A new page is reachable from the Settings navigation with a clear title and description.",
-      "The page lists reminder emails scheduled for the signed-in user's upcoming bookings only, with booking title, attendee and send time for each row.",
-      "Send times are shown in the user's timezone and date/time format.",
-      "Rows are ordered by send time, soonest first.",
-      "Reminders for past, cancelled or rejected bookings are not shown.",
-      "The page is read-only: no edit, delete or create controls.",
-      "When there are no upcoming reminders, an empty state with explanatory text is shown instead of an empty list.",
-      "A user never sees reminders belonging to other users' bookings.",
-      "All user-facing strings are in the English locale file.",
-      "Page is covered by tests for the list, empty state and access scoping."
-    ],
-    "questions": [
-      "The schema has no model of scheduled reminder emails (only ReminderMail, with no send time). Should the send time be computed from a fixed rule, such as 24h before the booking start, or should we surface an existing scheduler's data if you have one?",
-      "Should the list include reminders sent to the user as organizer only, or also bookings where the user is an attendee?"
-    ]
-  }
+  "updated_at": 1794274205
 }
