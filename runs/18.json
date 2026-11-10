@@ -1,5 +1,5 @@
 {
-  "status": "pm",
+  "status": "research",
   "issue": {
     "number": 18,
     "title": "Add aria-label to the booking page duration badge",
@@ -24,5 +24,24 @@
     }
   ],
   "clarification_comment_ids": [],
-  "updated_at": 1794272565
+  "updated_at": 1794272566,
+  "pm": {
+    "summary": "Small accessibility fix to the booking page duration display: add a localized \"Duration: X minutes\" accessible label and leave the visible text as it is. Ready for implementation with a unit test.",
+    "scope_type": "ui_change",
+    "complexity": "simple",
+    "requires_plan_approval": false,
+    "acceptance_criteria": [
+      "Problem: on the public booking page, `EventDuration` (apps/web/modules/bookings/components/event-meta/Duration.tsx) shows short text such as \"30m\" or \"1h 30m\". Screen readers read this as an unclear abbreviation. This affects screen-reader users who book events.",
+      "For a single-duration event (no multipleDuration, not dynamic), the rendered duration element has aria-label \"Duration: 30 minutes\" for a 30-minute event, and its visible text is still \"30m\".",
+      "When the event has multiple durations but `hideDurationSelectorInBookingPage` is true, the rendered duration text has an aria-label for the selected duration (or the default length if none is selected), e.g. \"Duration: 60 minutes\" or \"Duration: 1 hour\", and its visible text does not change.",
+      "When the multiple-duration selector is shown, each duration option has an aria-label in the same format (e.g. \"Duration: 15 minutes\"), and its visible label (e.g. \"15m\") does not change. The existing data-testid, data-active and click-to-select behavior still work.",
+      "The label spells out units with correct pluralization: 1 minute gives \"Duration: 1 minute\", 90 minutes gives a label that includes both \"1 hour\" and \"30 minutes\", and 120 minutes gives \"Duration: 2 hours\".",
+      "The label text comes from i18n: a new English key exists in packages/i18n/locales/en/common.json (e.g. \"Duration: {{duration}}\"), and the label is not a hardcoded English string. No other locale files are required.",
+      "The visible layout is unchanged: the same text, classes and positions as before, with no extra visible characters.",
+      "`getDurationFormatted` keeps its current output, so BookFormAsModal, which also uses it, shows exactly what it shows today.",
+      "A new unit test inside apps/web/ (e.g. next to Duration.tsx or in apps/web/modules/bookings/components/) renders EventDuration. It checks the aria-label for at least the single-duration case and one hours case, and checks that the visible short text is unchanged. The test passes with the repo's existing test runner.",
+      "Out of scope: the visible duration format, other event-meta blocks (location, price, etc.), the BookFormAsModal duration, non-English translations, and any dependency or tooling changes."
+    ],
+    "questions": []
+  }
 }
