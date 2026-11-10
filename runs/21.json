@@ -1,5 +1,5 @@
 {
-  "status": "design_need",
+  "status": "design",
   "issue": {
     "number": 21,
     "title": "New settings page listing upcoming booking reminders",
@@ -50,7 +50,7 @@
   "clarification_comment_ids": [
     6756289657
   ],
-  "updated_at": 1794274324,
+  "updated_at": 1794274325,
   "pm": {
     "summary": "New read-only Settings page listing reminder emails for the host's upcoming bookings, send time fixed at 24h before start. This is a new screen, so it goes to the Designer next.",
     "scope_type": "screen",
@@ -105,5 +105,13 @@
       "yarn type-check",
       "yarn lint"
     ]
-  }
+  },
+  "design_need": {
+    "summary": "This is a new Settings screen, so design is needed. The Designer gets a brief for a read-only list of upcoming booking reminders with an empty state, then the plan follows.",
+    "needed": true,
+    "confidence": 0.95,
+    "design_brief": "Design a new read-only Settings page, \"Booking reminders\", reachable from the Settings navigation (My account group).\n\nPurpose: a host sees which reminder emails are scheduled for their upcoming bookings. Send time is always 24 hours before the booking start.\n\nReuse the existing Settings patterns: the same header (title plus short description), the same list and empty-state styling as other settings pages (e.g. out of office), and the same navigation item style.\n\nContent per row: booking title, attendee (name and email), send time (date and time in the user's timezone and locale). Rows are sorted by send time ascending. Only bookings where the user is the host are shown.\n\nPlease specify:\n1. Page title and description copy.\n2. List layout (table or stacked rows), column labels, and how it behaves on mobile (narrow width).\n3. Handling of multiple attendees on one booking and of long titles or emails.\n4. Empty state: icon, heading and explanatory text, with no call to action that edits anything.\n5. Navigation label and position within Settings.\n6. Loading is not a concern (server-rendered), but note any skeleton if you see fit.\n\nConstraints: no buttons, forms or actions to edit, send or cancel reminders. Light and dark themes must work using existing UI components. All strings must be i18n-ready (English keys). Past-due send times for still-upcoming bookings are shown as normal rows, with no special state.\n\nDeliver: a layout description or wireframe of the populated state and the empty state, the component list from the existing UI kit, and the final copy strings.",
+    "effective_needed": true
+  },
+  "design_required": true
 }
