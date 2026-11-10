@@ -328,3 +328,16 @@ def test_sample_results_match_the_stage_contracts():
         if stage == "deploy":
             sample = {"merge_sha": MERGE, **sample}
         jsonschema.validate(sample, spec["schema"])
+
+
+def test_planner_questions_resume_planning_with_design_kept(env):
+    gh, script, _, workflow = env
+    script.results["pm"] = [result("pm", scope_type="screen")]
+    script.results["plan"] = [result("plan", open_questions=["Include pending bookings?"])]
+    drive(workflow, start(workflow))
+    drive(workflow, say(workflow, "/option 1"))
+    assert gh.state["status"] == "needs_information"
+    assert say(workflow, "Accepted only.", comment_id=77) == "plan"
+    assert gh.state["selected_design"]["id"] == 1 and "77" in gh.state["issue"]["body"]
+    assert drive(workflow, "plan") == ["plan"] and gh.state["status"] == "awaiting_approval"
+    assert script.calls.count("pm") == 1 and script.calls.count("design") == 1
