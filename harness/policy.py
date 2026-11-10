@@ -110,10 +110,13 @@ def check_results_pass(results, head_sha, required):
                and by_name[name].get("conclusion") == "success" for name in required)
 
 
-def validate_check_evidence(evidence, head_sha):
+CI_CHECKS = {"fast": {"tests", "lint"}, "full": {"tests", "lint", "web-types"}}
+
+
+def validate_check_evidence(evidence, head_sha, profile):
     """A summary or green workflow alone cannot stand in for executed checks."""
-    if not isinstance(evidence, dict) or evidence.get("head_sha") != head_sha:
-        raise GateError("Checks artifact commit mismatch")
+    if not isinstance(evidence, dict) or evidence.get("head_sha") != head_sha or evidence.get("profile") != profile:
+        raise GateError("Checks artifact commit or profile mismatch")
     checks = evidence.get("checks")
     if not isinstance(checks, list) or not checks:
         raise GateError("Checks artifact contains no actual checks")
@@ -124,7 +127,7 @@ def validate_check_evidence(evidence, head_sha):
                 or not isinstance(check.get("command"), list) or not check["command"]):
             raise GateError("Checks artifact has invalid execution evidence")
         names.add(check["name"])
-    if {"tests", "web-types", "lint"} - names:
+    if CI_CHECKS[profile] - names:
         raise GateError("Checks artifact omits required application checks")
     if evidence.get("passed") is not all(check["exit_code"] == 0 for check in checks):
         raise GateError("Checks artifact conclusion disagrees with its executed checks")
