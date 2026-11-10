@@ -1,5 +1,5 @@
 {
-  "status": "failed",
+  "status": "testing",
   "issue": {
     "number": 18,
     "title": "Add aria-label to the booking page duration badge",
@@ -124,7 +124,7 @@
     }
   ],
   "clarification_comment_ids": [],
-  "updated_at": 1794275962,
+  "updated_at": 1794276014,
   "pm": {
     "summary": "Small UI change: give every duration shown on the booking page a localized screen-reader label like \"Duration: 30 minutes\", keep the visible text the same, and add a unit test. Ready for implementation.",
     "scope_type": "ui_change",
@@ -384,5 +384,5 @@
   },
   "resume_status": "testing",
   "failed_step": "test",
-  "error": "CI found a failure."
+  "error": null
 }
