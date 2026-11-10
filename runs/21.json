@@ -57,12 +57,24 @@
         "total_cost_usd": 0.0741877
       },
       "denied_tools": []
+    },
+    {
+      "name": "plan",
+      "sha": "e6aad278a4cfc3e815a0c697f312f5f4fca307b9",
+      "agent": "planning",
+      "at": 1794274864,
+      "usage": {
+        "input_tokens": 4,
+        "output_tokens": 2284,
+        "total_cost_usd": 0.07227719999999999
+      },
+      "denied_tools": []
     }
   ],
   "clarification_comment_ids": [
     6756289657
   ],
-  "updated_at": 1794274821,
+  "updated_at": 1794274864,
   "pm": {
     "summary": "New read-only Settings page listing reminder emails for the host's upcoming bookings, send time fixed at 24h before start. This is a new screen, so it goes to the Designer next.",
     "scope_type": "screen",
