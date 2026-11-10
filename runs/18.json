@@ -1,5 +1,5 @@
 {
-  "status": "plan",
+  "status": "implement",
   "issue": {
     "number": 18,
     "title": "Add aria-label to the booking page duration badge",
@@ -72,7 +72,7 @@
     }
   ],
   "clarification_comment_ids": [],
-  "updated_at": 1794276381,
+  "updated_at": 1794276383,
   "pm": {
     "summary": "Add a localized \"Duration: 30 minutes\" accessible label to the booking page duration text, with the visible text unchanged. No questions; next step is implementation with a unit test.",
     "scope_type": "ui_change",
@@ -123,5 +123,65 @@
     "design_brief": "",
     "effective_needed": false
   },
-  "design_required": false
+  "design_required": false,
+  "plan": {
+    "summary": "Wrap the two text-only branches of EventDuration in a span with a localized full-unit aria-label from a new English key, leaving visible text unchanged. Next: implement and add a unit test.",
+    "files": [
+      "apps/web/modules/bookings/components/event-meta/Duration.tsx",
+      "packages/i18n/locales/en/common.json",
+      "apps/web/modules/bookings/components/event-meta/Duration.test.tsx"
+    ],
+    "tests": [
+      {
+        "path": "apps/web/modules/bookings/components/event-meta/Duration.test.tsx",
+        "kind": "new_test",
+        "purpose": "Checks aria-label \"Duration: 30 minutes\" with visible \"30m\" for a fixed event, \"Duration: 1 hour 30 minutes\" for 90 minutes, and the label in the hideDurationSelector branch. Also checks that the multi-duration selector has no label and its options still render and call setSelectedDuration on click."
+      },
+      {
+        "path": "apps/web/modules/bookings/components/event-meta/Duration.test.tsx",
+        "kind": "existing_test",
+        "purpose": "Also covers getDurationFormatted staying unchanged (\"30m\", \"1h\", \"1h 30m\"). No existing Duration tests were found, so these cases are added to the new file."
+      }
+    ],
+    "acceptance_criteria": [
+      "A fixed-duration event renders its text inside an element with aria-label \"Duration: 30 minutes\", and a 90-minute event gets \"Duration: 1 hour 30 minutes\".",
+      "The hideDurationSelector branch uses the same label, built from selectedDuration or event.length.",
+      "Visible text is unchanged (\"30m\", \"1h 30m\") and no styling or layout changes.",
+      "The label comes from a new key `duration_label` (\"Duration: {{duration}}\") in en/common.json, used via t(), with no hardcoded English in the component. Full units reuse the existing minute and hour plural keys.",
+      "The multi-duration selector markup and behavior are untouched.",
+      "getDurationFormatted output and its export are unchanged.",
+      "The new unit test passes, and type-check and lint pass.",
+      "All edits stay within the allowed scope, and no human-review paths are touched."
+    ],
+    "steps": [
+      "Check that `duration_label` does not already exist in en/common.json. Add `\"duration_label\": \"Duration: {{duration}}\"` right after `\"duration\"` (line 920). Edit English only.",
+      "In Duration.tsx, add an exported helper `getDurationLabelFormatted(mins, t)`. It computes hours and remainder minutes and builds the text with t(\"hour\", {count}) and t(\"minute\", {count}), joined by a space. It returns null when mins is falsy. Leave getDurationFormatted untouched.",
+      "Add a small internal `DurationText` helper, or inline the logic, that renders `<span aria-label={t(\"duration_label\", {duration: full})}>{short}</span>`. Use it in the fixed-duration branch (line 93) and the hideDurationSelector branch (line 101), and skip the wrapper when mins is falsy.",
+      "Create Duration.test.tsx following DatePicker.test.tsx. Mock useLocale with a t that resolves the English strings (with plural handling), plus useBookerStoreContext, useIsPlatform, useIsEmbed and useShouldShowArrows. Cover the cases listed under tests.",
+      "Run `TZ=UTC yarn vitest run apps/web/modules/bookings/components/event-meta/Duration.test.tsx`, then the bookings components folder, then the web type-check and lint."
+    ],
+    "risk": "low",
+    "open_questions": []
+  },
+  "evaluation": {
+    "summary": "Plan matches the issue and all PM criteria, stays in scope, and every criterion has a test. Aligned and low risk; proceed to implementation with minor notes.",
+    "aligned": true,
+    "score": 0.9,
+    "risk": "low",
+    "requires_human": false,
+    "missing_acceptance_criteria": [],
+    "findings": [
+      "Scope: the three files are under apps/web/ and packages/i18n/locales/ with allowed extensions. No human-review or protected paths are touched.",
+      "Criteria 1 and 2 (fixed and hideDurationSelector labels) are covered by the 30-minute, 90-minute and hideDurationSelector test cases.",
+      "Criterion 3 (visible text unchanged) is covered by asserting the visible text \"30m\" and \"1h 30m\" inside the labelled span.",
+      "Criterion 4 (new English key used via t()) is covered by the duration_label step. The test only sees the key through its mocked t, so no test checks the real en/common.json value. Consider loading the real English JSON in the mock so a typo in the key or its text fails the test.",
+      "Criterion 5 (selector unchanged) is covered by asserting that the multi-duration selector has no label and its options still render and call setSelectedDuration on click.",
+      "Criterion 6 (unit test for label and visible text) is covered by the new Duration.test.tsx.",
+      "Criterion 7 is covered by the getDurationFormatted cases and the type-check and lint steps. The plan lists the getDurationFormatted cases as an existing_test, but they go in the new file; this is a labelling nit, not a gap.",
+      "Risk: aria-label on a bare span has weak screen-reader support without a role. The plan follows the issue's request for an aria-label, so this is acceptable. Mention the limitation in the PR notes.",
+      "The falsy-mins edge case is handled by skipping the wrapper. A zero-duration test case would make this explicit."
+    ]
+  },
+  "plan_fingerprint": "bdc70a16cb2a1094a2c657b50e39cf0033059bebbec82c5dd275c97c4ffce925",
+  "asked_by": null
 }
