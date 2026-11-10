@@ -1,0 +1,15 @@
+{
+  "status": "pm",
+  "issue": {
+    "number": 21,
+    "title": "New settings page listing upcoming booking reminders",
+    "body": "Harness test (new screen). Add a new page under Settings where users see the reminder emails scheduled for their upcoming bookings (booking title, attendee, send time), read-only. Empty state when there are none."
+  },
+  "issue_digest": "922d881c4480825df16d84ca56e6ab7d772ea185d8877ed8d23849de6ff05419",
+  "base_sha": "e6aad278a4cfc3e815a0c697f312f5f4fca307b9",
+  "run_id": "42735863516-1",
+  "started_by": "lucasgrocha",
+  "stages": [],
+  "clarification_comment_ids": [],
+  "updated_at": 1794274038
+}
