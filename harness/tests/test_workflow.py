@@ -145,14 +145,16 @@ class Script:
 
 @pytest.fixture
 def env(monkeypatch):
-    gh, script, ci = FakeGitHub(), Script(), []
+    gh, script, ci, profiles = FakeGitHub(), Script(), [], []
 
-    def fake_ci(github, ref, head, base, *, timeout):
+    def fake_ci(github, ref, head, base, *, profile, timeout):
+        profiles.append(profile)
         passed = ci.pop(0) if ci else True
         return {"head_sha": head, "passed": passed, "checks": [{"name": "tests", "exit_code": 0 if passed else 1}]}
 
     monkeypatch.setattr(wf, "run_ci", fake_ci)
     workflow = wf.Workflow(Controller(CONFIG, gh, runner=script.runner))
+    workflow.ci_profiles = profiles
     return gh, script, ci, workflow
 
 
@@ -187,6 +189,7 @@ def test_simple_change_goes_to_merge_without_pauses(env):
     path = drive(workflow, start(workflow))
     assert path == ["pm", "research", "design_need", "plan", "implement", "test", "review", "review_gate", "merge", "deploy"]
     assert gh.state["status"] == "done" and gh.merged
+    assert workflow.ci_profiles == ["fast", "full"]  # type-check only on the merged version
     assert script.calls == ["pm", "research", "design_need", "plan", "evaluate", "implement", "test",
                             "code_evals", "review", "deploy"]
     authors = {body.split("**")[1] for _, body in gh.comments}
@@ -304,7 +307,9 @@ def test_scope_and_commands():
 def test_agent_definitions_restrict_tools():
     for name in ("pm", "designer", "planner", "implementer", "tester", "reviewer", "deployer"):
         agent = definition(AGENTS_DIR / f"{name}.md")
-        args = command(CONFIG, agent, schema={"type": "object"}, writable=name == "implementer")
+        role = "implementation" if name == "implementer" else "review"
+        args = command(CONFIG, agent, schema={"type": "object"}, role=role, writable=name == "implementer")
+        assert args[args.index("--model") + 1] == ("opus" if name == "implementer" else "sonnet")
         tools = args[args.index("--tools") + 1].split(",")
         assert ("Edit" in tools) == (name == "implementer")
         assert "StructuredOutput" in tools

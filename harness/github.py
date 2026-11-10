@@ -193,16 +193,16 @@ class GitHub:
                 return checks
             page += 1
 
-    def dispatch_ci(self, ref, base_sha):
+    def dispatch_ci(self, ref, base_sha, profile):
         """PRs and pushes made with GITHUB_TOKEN don't start workflows; a dispatch does."""
-        self.repo_api("POST", f"actions/workflows/{CI_WORKFLOW}/dispatches", {"ref": ref, "inputs": {"base_sha": base_sha}})
+        self.repo_api("POST", f"actions/workflows/{CI_WORKFLOW}/dispatches", {"ref": ref, "inputs": {"base_sha": base_sha, "profile": profile}})
 
     def ci_run(self, head_sha, since):
         runs = self.repo_api("GET", f"actions/workflows/{CI_WORKFLOW}/runs?event=workflow_dispatch&head_sha={head_sha}&per_page=20")
         runs = [r for r in runs["workflow_runs"] if r["created_at"] >= since and r["head_sha"] == head_sha]
         return max(runs, key=lambda r: r["id"], default=None)
 
-    def check_evidence(self, run_id, head_sha):
+    def check_evidence(self, run_id, head_sha, profile):
         run = self.repo_api("GET", f"actions/runs/{run_id}")
         if (run.get("head_sha") != head_sha or run.get("path") != f".github/workflows/{CI_WORKFLOW}"
                 or run.get("repository", {}).get("full_name") != self.repo
@@ -235,5 +235,5 @@ class GitHub:
             raise GateError("Checks artifact exceeds the download limit")
         with zipfile.ZipFile(io.BytesIO(data)) as archive:
             evidence = json.loads(archive.read("checks.json"))
-        validate_check_evidence(evidence, head_sha)
+        validate_check_evidence(evidence, head_sha, profile)
         return {**evidence, "run_id": run_id, "run_url": run["html_url"]}

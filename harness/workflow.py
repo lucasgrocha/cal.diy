@@ -247,7 +247,7 @@ class Workflow:
         c = self.c
         while True:
             head = c.state["head_sha"]
-            evidence = run_ci(c.gh, c.state["branch"], head, c.state["base_sha"], timeout=c.config["ci_timeout_seconds"])
+            evidence = run_ci(c.gh, c.state["branch"], head, c.state["base_sha"], profile="fast", timeout=c.config["ci_timeout_seconds"])
             c.save(check_evidence=evidence)
             failure = None
             if not evidence["passed"]:
@@ -336,7 +336,7 @@ class Workflow:
     def step_deploy(self):
         c = self.c
         merge_sha = c.state["merge_sha"]
-        evidence = run_ci(c.gh, c.config["base_branch"], merge_sha, c.state["base_sha"], timeout=c.config["ci_timeout_seconds"])
+        evidence = run_ci(c.gh, c.config["base_branch"], merge_sha, c.state["base_sha"], profile="full", timeout=c.config["ci_timeout_seconds"])
         with c.runner(c.config, merge_sha) as agent:
             result = c.stage(agent, "deploy", {"merge_sha": merge_sha, "issue": c.state["issue"], "pm": c.state["pm"],
                                                 "plan": c.state["plan"], "checks": evidence})

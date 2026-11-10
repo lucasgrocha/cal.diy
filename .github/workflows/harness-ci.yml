@@ -10,6 +10,12 @@ on:
         description: Commit the checks are measured from
         required: true
         type: string
+      profile:
+        description: fast (candidate commit) or full (merged main, adds the apps/web type-check)
+        required: false
+        default: full
+        type: choice
+        options: [fast, full]
 
 permissions:
   contents: read
@@ -22,6 +28,7 @@ jobs:
     env:
       NODE_OPTIONS: --max-old-space-size=12288
       BASE_SHA: ${{ inputs.base_sha }}
+      PROFILE: ${{ inputs.profile }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -39,7 +46,7 @@ jobs:
           git fetch --quiet --depth=1 origin "$BASE_SHA"
       - uses: ./.github/actions/yarn-install
       - name: Run checks
-        run: python3 .harness-trusted/harness/ci_checks.py "$BASE_SHA" "$GITHUB_SHA" "$RUNNER_TEMP/checks.json"
+        run: python3 .harness-trusted/harness/ci_checks.py "$BASE_SHA" "$GITHUB_SHA" "$RUNNER_TEMP/checks.json" "$PROFILE"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

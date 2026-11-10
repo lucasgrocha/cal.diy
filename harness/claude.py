@@ -21,10 +21,11 @@ def definition(path):
     return {"prompt": match.group(2).strip(), "rules": rules}
 
 
-def command(config, agent, *, schema, writable=False, executable="claude"):
+def command(config, agent, *, schema, role, writable=False, executable="claude"):
     rules = [*agent["rules"], "StructuredOutput"]
     names = ",".join(dict.fromkeys(rule.split("(")[0] for rule in rules))
     settings = {"disableAllHooks": True, "autoMemoryEnabled": False}
+    model = {"model": config["model"], "reasoning_effort": config["reasoning_effort"], **config["role_models"].get(role, {})}
     jsonschema.Draft202012Validator.check_schema(schema)
     return [executable, "-p", "--output-format", "json", "--no-session-persistence",
             "--restricted", "--permission-mode", "dontAsk", "--permission-prompts", "none",
@@ -32,7 +33,7 @@ def command(config, agent, *, schema, writable=False, executable="claude"):
             "--strict-mcp-config", "--mcp-config", '{"mcpServers":{}}',
             "--disable-slash-commands", "--settings", json.dumps(settings),
             "--append-system-prompt", agent["prompt"],
-            "--model", config["model"], "--effort", config["reasoning_effort"],
+            "--model", model["model"], "--effort", model["reasoning_effort"],
             "--max-turns", str(config["implementation_max_turns"] if writable else config["agent_max_turns"]),
             "--max-budget-usd", str(config["implementation_budget_usd"] if writable else config["agent_reservation_per_stage_usd"]),
             "--json-schema", json.dumps(schema)]
