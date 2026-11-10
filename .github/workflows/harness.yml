@@ -1,109 +1,327 @@
 ##########################################################################################
-# Delivery harness: Claude Code takes an issue labeled `prioritized` to a pull request.  #
+# Issue harness: an issue labeled `prioritized` goes through PM, Planner, Designer,       #
+# Implementer, Tester, Reviewer and Deployer up to the merge (harness/workflow.py).      #
 #----------------------------------------------------------------------------------------#
-# The issue's `harness:*` label is the task state. Each stage is run by one agent, with  #
-# its role and tools defined in .claude/agents/<agent>.md; the workflow picks the agent, #
-# hands it its context, checks its output and only then moves the label forward. Each    #
-# agent signs its comments on the issue.                                                 #
+# Each job runs one step. The task state lives in runs/<issue>.json on the               #
+# `harness-state` branch; each step checks it is in the state it expects, runs its       #
+# agent, checks the result against the gates in harness/policy.py and outputs `next`,    #
+# the job that runs after it. Human decisions are issue commands (harness/responses.py): #
+#   /option N · /approve plan <fp> · /revise <text> · /approve merge <sha>              #
+#   /handoff (to an interactive session) · /resume                                      #
 #                                                                                        #
-# prioritized ─► triage (PM) ─┬─(UI)─► design (Designer) ─┬─► plan (Planner)             #
-#                             └───────────────────────────┘                              #
-# triage / design / plan ─► awaiting-answers ──(reply)──► the stage that asked           #
-# plan ─► awaiting-approval ─┬─(/revise)──► plan                                         #
-#                            └─(/approve)─► implementation (Implementer)                 #
-# implementation ─► testing (Tester) ─► review (Reviewer) ─► deployment (Deployer)       #
-#                 ◄──(fail / changes, at most twice per run)──┘     └─► delivered (PR)   #
-# implementation / deployment ─► awaiting-answers (plan didn't hold up) ─(reply)─► plan  #
+# Issue ─► PM ─► Planner research ─► design? ─yes─► Designer ─► /option N ─┐              #
+#                                       └─no────────────────────────────► Plan + eval    #
+# Plan ─► approval? ─yes─► /approve plan ─┐                                              #
+#             └─no────────────────────────────► Implementer ─► CI and Tester (repairs  #
+#   up to the limit) ─► Reviewer ‖ code evals ─► human review? ─yes─► /approve merge     #
+#             └─no───────────────────────────────────────────────► merge ─► Deployer     #
 #                                                                                        #
-# A failed stage adds `harness:blocked`; `/resume` repeats it, restarting the build from #
-# implementation, since commits only live in the run that made them.                     #
-# Only the repository owner can move the state, and only their comments are              #
-# given to Claude. Removing `prioritized` pauses the harness.                            #
-#                                                                                        #
-# Setup: create the `prioritized` label, run `/install-github-app` in Claude Code        #
-# (subscription login; it stores the CLAUDE_CODE_OAUTH_TOKEN secret), and enable         #
-# "Allow GitHub Actions to create and approve pull requests". PRs opened with the        #
-# default token don't trigger CI; set HARNESS_GITHUB_TOKEN (contents + pull requests     #
-# write) to have them run it.                                                            #
+# Only the repository owner can start or steer it. Setup: CLAUDE_CODE_OAUTH_TOKEN        #
+# secret, the `prioritized` label, and "Allow GitHub Actions to create and approve pull   #
+# requests". Deploy (Railway) isn't configured: the Deployer checks main's CI on the     #
+# merge commit.                                                                          #
 ##########################################################################################
 
 name: Harness
 
 on:
   issues:
-    types: [labeled]
+    types: [opened, labeled]
   issue_comment:
     types: [created]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: Issue to start
+        required: true
+        type: string
 
 permissions:
   contents: write
   issues: write
   pull-requests: write
+  actions: write
+  checks: read
 
-defaults:
-  run:
-    shell: bash
+# One run per issue at a time, so a step never reads a state another run is changing.
+concurrency:
+  group: harness-issue-${{ github.event.issue.number || inputs.issue_number }}
+  cancel-in-progress: false
 
 jobs:
-  deliver:
+  entry:
+    name: Issue entry
     # Runs only for the repository owner, even on a public repo.
     if: >-
       github.actor == github.repository_owner && (
-      (github.event_name == 'issues' && github.event.label.name == 'prioritized') ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' && contains(github.event.issue.labels.*.name, 'prioritized')) ||
       (github.event_name == 'issue_comment' && !github.event.issue.pull_request &&
-       github.event.comment.user.type != 'Bot' &&
-       contains(join(github.event.issue.labels.*.name, ' '), 'harness:')))
+       github.event.comment.user.type == 'User' && contains(github.event.issue.labels.*.name, 'prioritized')))
     runs-on: ubuntu-latest
-    timeout-minutes: 120
-    # One run per issue at a time, so the state read by the router is never stale.
-    concurrency:
-      group: harness-issue-${{ github.event.issue.number }}
-    env:
-      GH_TOKEN: ${{ github.token }}
-      REPO: ${{ github.repository }}
-      ISSUE: ${{ github.event.issue.number }}
-      ACTOR: ${{ github.actor }}
-      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    timeout-minutes: 15
+    outputs:
+      next: ${{ steps.step.outputs.next }}
+      issue: ${{ steps.step.outputs.issue }}
     steps:
       - uses: actions/checkout@v4
         with:
-          # Keeps the token out of .git/config, where Claude could read it.
           persist-credentials: false
-
-      - name: Route
-        id: route
+      - id: step
+        uses: ./.github/actions/harness-step
+        with:
+          step: entry
         env:
-          EVENT_NAME: ${{ github.event_name }}
-          COMMENT: ${{ github.event.comment.body }}
-        run: |
-          source .github/harness/lib.sh
-          harness_route
+          GITHUB_TOKEN: ${{ github.token }}
 
-      - name: Install dependencies
-        if: steps.route.outputs.stage == 'implementation'
-        uses: ./.github/actions/yarn-install
-
-      - name: Install Claude Code
-        if: steps.route.outputs.stage != ''
-        run: npm install --global @anthropic-ai/claude-code@2.1.311
-
-      # Picks each stage's agent, hands it its context, checks its output and moves the
-      # issue on, until a stage needs the owner or the PR is open.
-      - name: Drive
-        if: steps.route.outputs.stage != ''
+  pm:
+    name: 🤖 PM / triage
+    needs: [entry]
+    if: ${{ !cancelled() && contains(needs.*.outputs.next, 'pm') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      next: ${{ steps.step.outputs.next }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - id: step
+        uses: ./.github/actions/harness-step
+        with:
+          step: pm
+          issue: ${{ needs.entry.outputs.issue }}
         env:
-          STAGE: ${{ steps.route.outputs.stage }}
+          GITHUB_TOKEN: ${{ github.token }}
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          BASE_BRANCH: ${{ github.event.repository.default_branch }}
-          PUSH_TOKEN: ${{ secrets.HARNESS_GITHUB_TOKEN || github.token }}
-        run: |
-          source .github/harness/lib.sh
-          harness_drive "$STAGE"
 
-      - name: Block on failure
-        if: failure() && steps.route.outputs.stage != ''
-        run: |
-          source .github/harness/lib.sh
-          reason=$(cat "$RUNNER_TEMP/harness-block-reason" 2>/dev/null || echo "A stage failed; see the run logs.")
-          harness_block
-          harness_comment harness "Blocked" "$reason" "@$ACTOR, fix it and comment \`/resume\`."
+  research:
+    name: 🤖 Planner / research or investigation
+    needs: [entry, pm]
+    if: ${{ !cancelled() && contains(needs.*.outputs.next, 'research') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      next: ${{ steps.step.outputs.next }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - id: step
+        uses: ./.github/actions/harness-step
+        with:
+          step: research
+          issue: ${{ needs.entry.outputs.issue }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+  design_need:
+    name: 🤖 PM / needs design?
+    needs: [entry, pm, research]
+    if: ${{ !cancelled() && contains(needs.*.outputs.next, 'design_need') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      next: ${{ steps.step.outputs.next }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - id: step
+        uses: ./.github/actions/harness-step
+        with:
+          step: design_need
+          issue: ${{ needs.entry.outputs.issue }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+  design:
+    name: 🤖 Designer / three options
+    needs: [entry, design_need]
+    if: ${{ !cancelled() && contains(needs.*.outputs.next, 'design') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      next: ${{ steps.step.outputs.next }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - id: step
+        uses: ./.github/actions/harness-step
+        with:
+          step: design
+          issue: ${{ needs.entry.outputs.issue }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+  plan:
+    name: 🤖 Planner / plan and adherence eval
+    needs: [entry, pm, research, design_need, design]
+    if: ${{ !cancelled() && contains(needs.*.outputs.next, 'plan') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    outputs:
+      next: ${{ steps.step.outputs.next }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - id: step
+        uses: ./.github/actions/harness-step
+        with:
+          step: plan
+          issue: ${{ needs.entry.outputs.issue }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+  implement:
+    name: 🤖 Implementer / PR
+    needs: [entry, plan]
+    if: ${{ !cancelled() && contains(needs.*.outputs.next, 'implement') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    outputs:
+      next: ${{ steps.step.outputs.next }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - id: step
+        uses: ./.github/actions/harness-step
+        with:
+          step: implement
+          issue: ${{ needs.entry.outputs.issue }}
+          yarn: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+  test:
+    name: 🤖 Tester / CI and criteria
+    needs: [entry, implement]
+    if: ${{ !cancelled() && contains(needs.*.outputs.next, 'test') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    outputs:
+      next: ${{ steps.step.outputs.next }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - id: step
+        uses: ./.github/actions/harness-step
+        with:
+          step: test
+          issue: ${{ needs.entry.outputs.issue }}
+          yarn: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+  code_evals:
+    name: 🤖 Reviewer / code evals
+    needs: [entry, test]
+    if: ${{ !cancelled() && contains(needs.*.outputs.next, 'review') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      next: ${{ steps.step.outputs.next }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - id: step
+        uses: ./.github/actions/harness-step
+        with:
+          step: code_evals
+          issue: ${{ needs.entry.outputs.issue }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+  review:
+    name: 🤖 Reviewer / independent review
+    needs: [entry, test]
+    if: ${{ !cancelled() && contains(needs.*.outputs.next, 'review') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      next: ${{ steps.step.outputs.next }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - id: step
+        uses: ./.github/actions/harness-step
+        with:
+          step: review
+          issue: ${{ needs.entry.outputs.issue }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+  review_gate:
+    name: 🤖 Reviewer / review gate
+    needs: [entry, code_evals, review]
+    if: ${{ !cancelled() && needs.code_evals.outputs.next == 'review_gate' && needs.review.outputs.next == 'review_gate' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      next: ${{ steps.step.outputs.next }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - id: step
+        uses: ./.github/actions/harness-step
+        with:
+          step: review_gate
+          issue: ${{ needs.entry.outputs.issue }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+  merge:
+    name: Merge gate
+    needs: [entry, review_gate]
+    if: ${{ !cancelled() && contains(needs.*.outputs.next, 'merge') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      next: ${{ steps.step.outputs.next }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - id: step
+        uses: ./.github/actions/harness-step
+        with:
+          step: merge
+          issue: ${{ needs.entry.outputs.issue }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+  deploy:
+    name: 🤖 Deployer / merged version
+    needs: [entry, merge]
+    if: ${{ !cancelled() && contains(needs.*.outputs.next, 'deploy') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    outputs:
+      next: ${{ steps.step.outputs.next }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - id: step
+        uses: ./.github/actions/harness-step
+        with:
+          step: deploy
+          issue: ${{ needs.entry.outputs.issue }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
