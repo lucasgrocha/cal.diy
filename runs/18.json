@@ -1,5 +1,5 @@
 {
-  "status": "pm",
+  "status": "research",
   "issue": {
     "number": 18,
     "title": "Add aria-label to the booking page duration badge",
@@ -24,5 +24,21 @@
     }
   ],
   "clarification_comment_ids": [],
-  "updated_at": 1794276258
+  "updated_at": 1794276259,
+  "pm": {
+    "summary": "Add a localized \"Duration: 30 minutes\" accessible label to the booking page duration text, with the visible text unchanged. No questions; next step is implementation with a unit test.",
+    "scope_type": "ui_change",
+    "complexity": "simple",
+    "requires_plan_approval": false,
+    "acceptance_criteria": [
+      "For an event with a single fixed duration, the duration text has an accessible label such as \"Duration: 30 minutes\" (a 90-minute event reads \"Duration: 1 hour 30 minutes\", or equivalent full-unit wording).",
+      "The same accessible label is applied when the duration selector is hidden and only the selected or default duration is shown as text.",
+      "The visible text is unchanged (for example \"30m\"), and the layout and styling are visually unchanged.",
+      "The label comes from a new English key in packages/i18n/locales/en/common.json, is used through t(), and has no hardcoded English string in the component.",
+      "The multiple-duration selector keeps its current behavior, and its option text and click handling are unchanged.",
+      "A unit test checks that the accessible label is present with the expected text and that the visible text is unchanged.",
+      "Existing tests for Duration.tsx and getDurationFormatted still pass, and all edits stay within the allowed scope."
+    ],
+    "questions": []
+  }
 }
