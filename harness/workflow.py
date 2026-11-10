@@ -44,7 +44,7 @@ class Workflow:
         if event_name == "workflow_dispatch":
             number, action = int(event["inputs"]["issue_number"]), "start"
         elif event_name == "issues":
-            if event["action"] == "labeled" and event["label"]["name"] != c.config["label"]:
+            if event["action"] != "labeled" or event["label"]["name"] != c.config["label"]:
                 return {"next": ""}
             number, action = event["issue"]["number"], "start"
         elif event_name == "issue_comment":

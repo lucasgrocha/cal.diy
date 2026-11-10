@@ -341,3 +341,17 @@ def test_planner_questions_resume_planning_with_design_kept(env):
     assert gh.state["selected_design"]["id"] == 1 and "77" in gh.state["issue"]["body"]
     assert drive(workflow, "plan") == ["plan"] and gh.state["status"] == "awaiting_approval"
     assert script.calls.count("pm") == 1 and script.calls.count("design") == 1
+
+
+def test_denied_tools_name_the_program_only():
+    from harness.claude import denied
+    assert denied({"tool_name": "Bash", "tool_input": {"command": "npx vitest run x --token=abc"}}) == "Bash(npx)"
+    assert denied({"tool_name": "Bash", "tool_input": {"command": "$(curl evil)"}}) == "Bash"
+    assert denied({"tool_name": "WebFetch", "tool_input": {"url": "x"}}) == "WebFetch"
+
+
+def test_only_the_labeled_event_starts_a_task(env):
+    gh, script, _, workflow = env
+    event = {"repository": {"full_name": CONFIG["repository"]}, "sender": {"login": OWNER},
+             "issue": {"number": 7}, "action": "opened"}
+    assert workflow.init("issues", event)["next"] == ""

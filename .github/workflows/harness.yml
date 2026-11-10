@@ -26,7 +26,8 @@ name: Harness
 
 on:
   issues:
-    types: [opened, labeled]
+    # Only `labeled`: an issue created with the label also sends `opened`, which would start it twice.
+    types: [labeled]
   issue_comment:
     types: [created]
   workflow_dispatch:

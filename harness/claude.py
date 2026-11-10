@@ -50,9 +50,17 @@ def parse_result(raw, *, schema):
     result = envelope.get("structured_output")
     jsonschema.validate(result, schema)
     usage = envelope.get("usage") or {}
-    return {"result": result, "denied_tools": sorted({d.get("tool_name", "unknown") for d in envelope.get("permission_denials") or []}),
+    return {"result": result, "denied_tools": sorted({denied(d) for d in envelope.get("permission_denials") or []}),
             "usage": {"input_tokens": usage.get("input_tokens", 0), "output_tokens": usage.get("output_tokens", 0),
                       "total_cost_usd": envelope.get("total_cost_usd")}}
+
+
+def denied(denial):
+    """Tool name, plus the program for Bash; arguments may hold task text or secrets."""
+    name = denial.get("tool_name", "unknown")
+    command = (denial.get("tool_input") or {}).get("command", "") if name == "Bash" else ""
+    program = command.split()[0] if command.split() else ""
+    return f"{name}({program})" if program.replace("-", "").replace("_", "").replace("=", "").isalnum() else name
 
 
 def redact(text, secrets=()):
