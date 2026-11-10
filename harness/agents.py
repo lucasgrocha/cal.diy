@@ -81,5 +81,5 @@ def render_report(role, summary, *, decision=None, questions=None, details=None)
     if decision_text:
         visible += "\n\n" + decision_text
     if details:
-        visible += f"\n\n<details><summary>Detalhes</summary>\n\n{details}\n\n</details>"
+        visible += f"\n\n<details><summary>Details</summary>\n\n{details}\n\n</details>"
     return visible
