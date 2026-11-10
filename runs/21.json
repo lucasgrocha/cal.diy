@@ -1,5 +1,5 @@
 {
-  "status": "pm",
+  "status": "needs_information",
   "issue": {
     "number": 21,
     "title": "New settings page listing upcoming booking reminders",
@@ -24,5 +24,27 @@
     }
   ],
   "clarification_comment_ids": [],
-  "updated_at": 1794274130
+  "updated_at": 1794274132,
+  "pm": {
+    "summary": "New read-only Settings screen for upcoming booking reminders needs the Designer first. The schema has no scheduled-reminder data with a send time, so I need one decision on the data source.",
+    "scope_type": "screen",
+    "complexity": "complex",
+    "requires_plan_approval": true,
+    "acceptance_criteria": [
+      "A new page is reachable from the Settings navigation with a clear title and description.",
+      "The page lists reminder emails scheduled for the signed-in user's upcoming bookings only, with booking title, attendee and send time for each row.",
+      "Send times are shown in the user's timezone and date/time format.",
+      "Rows are ordered by send time, soonest first.",
+      "Reminders for past, cancelled or rejected bookings are not shown.",
+      "The page is read-only: no edit, delete or create controls.",
+      "When there are no upcoming reminders, an empty state with explanatory text is shown instead of an empty list.",
+      "A user never sees reminders belonging to other users' bookings.",
+      "All user-facing strings are in the English locale file.",
+      "Page is covered by tests for the list, empty state and access scoping."
+    ],
+    "questions": [
+      "The schema has no model of scheduled reminder emails (only ReminderMail, with no send time). Should the send time be computed from a fixed rule, such as 24h before the booking start, or should we surface an existing scheduler's data if you have one?",
+      "Should the list include reminders sent to the user as organizer only, or also bookings where the user is an attendee?"
+    ]
+  }
 }
