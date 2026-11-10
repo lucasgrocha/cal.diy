@@ -1,5 +1,5 @@
 {
-  "status": "testing",
+  "status": "failed",
   "issue": {
     "number": 18,
     "title": "Add aria-label to the booking page duration badge",
@@ -98,7 +98,7 @@
     }
   ],
   "clarification_comment_ids": [],
-  "updated_at": 1794277190,
+  "updated_at": 1794277192,
   "pm": {
     "summary": "Add a localized \"Duration: 30 minutes\" accessible label to the booking page duration text, with the visible text unchanged. No questions; next step is implementation with a unit test.",
     "scope_type": "ui_change",
@@ -273,5 +273,8 @@
     "passed": true,
     "run_id": 42741803787,
     "run_url": "https://github.com/lucasgrocha/cal.diy/actions/runs/42741803787"
-  }
+  },
+  "resume_status": "testing",
+  "failed_step": "test",
+  "error": "Project agent budget exhausted. No agent started."
 }
