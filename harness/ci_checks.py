@@ -34,7 +34,8 @@ def main():
             if changed else ["true"], head_sha),
     ]
     if profile == "full":
-        checks.append(run("web-types", ["yarn", "workspace", "@calcom/web", "type-check"], head_sha))
+        # Through turbo: type-check depends on @calcom/trpc#build for its generated types.
+        checks.append(run("web-types", ["yarn", "turbo", "run", "type-check", "--filter=@calcom/web"], head_sha))
     evidence = {"head_sha": head_sha, "base_sha": base_sha, "profile": profile, "changed_files": changed, "checks": checks,
                 "passed": all(check["exit_code"] == 0 for check in checks)}
     with open(output, "w") as file:
